@@ -1,0 +1,90 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800&display=swap');
+
+@theme {
+  /* 樱花粉 - 主色 */
+  --color-sakura-50: #fff5f7;
+  --color-sakura-100: #ffe8ed;
+  --color-sakura-200: #ffd0da;
+  --color-sakura-300: #ffa8bf;
+  --color-sakura-400: #ff7a9e;
+  --color-sakura-500: #f55082;
+  --color-sakura-600: #e03068;
+  --color-sakura-700: #c42058;
+  --color-sakura-800: #a31c4c;
+  --color-sakura-900: #8b1a46;
+
+  /* 蜜桃色 - 辅助色 */
+  --color-peach-50: #fff8f0;
+  --color-peach-100: #ffedd6;
+  --color-peach-200: #ffd8b0;
+  --color-peach-300: #ffb87a;
+  --color-peach-400: #ff9a4f;
+  --color-peach-500: #f7832e;
+  --color-peach-600: #d4650f;
+  --color-peach-700: #b04f0e;
+  --color-peach-800: #8e4012;
+  --color-peach-900: #753613;
+
+  /* 淡紫 - 点缀色 */
+  --color-lilac-50: #faf5ff;
+  --color-lilac-100: #f3e8ff;
+  --color-lilac-200: #e9d5ff;
+  --color-lilac-300: #d8b4fe;
+  --color-lilac-400: #c084fc;
+  --color-lilac-500: #a855f7;
+  --color-lilac-600: #9333ea;
+  --color-lilac-700: #7c3aed;
+  --color-lilac-800: #6b21a8;
+  --color-lilac-900: #581c87;
+
+  /* 云灰 - 柔和中性色 */
+  --color-cloud-50: #fafafa;
+  --color-cloud-100: #f4f4f5;
+  --color-cloud-200: #e4e4e7;
+  --color-cloud-300: #d4d4d8;
+  --color-cloud-400: #a1a1aa;
+  --color-cloud-500: #71717a;
+  --color-cloud-600: #52525b;
+  --color-cloud-700: #3f3f46;
+  --color-cloud-800: #27272a;
+  --color-cloud-900: #18181b;
+}
+
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  color: var(--color-cloud-800);
+}

@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(office-hours)",
+      "PowerShell(eval \"$\\('~/.claude/skills/gstack/bin/gstack-slug' 2>/dev/null\\)\")",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "PowerShell(npm create *)",
+      "PowerShell(npm install *)",
+      "PowerShell(npx tailwindcss init -p 2>&1)",
+      "PowerShell(npm ls *)",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 40)",
+      "PowerShell(npm run *)",
+      "Skill(browse)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(cd \"$env:USERPROFILE\\\\.claude\\\\skills\\\\gstack\\\\browse\" && .\\\\setup 2>&1)",
+      "PowerShell(Start-Process \"https://supabase.com/dashboard\")",
+      "PowerShell(supabase *)",
+      "PowerShell(Start-Process \"https://etvsroaeyisffxfbhcbh.supabase.co/project/default/sql\")",
+      "PowerShell(Start-Process \"https://supabase.com/dashboard/project/etvsroaeyisffxfbhcbh/sql/new\")",
+      "PowerShell($sql = Get-Content \"D:\\\\Claude Code\\\\couple_web\\\\supabase-schema.sql\" -Raw -Encoding UTF8; $body = @{ query = $sql } | ConvertTo-Json; Write-Output \"SQL file loaded, length: $\\($sql.Length\\)\")",
+      "PowerShell(notepad *)",
+      "PowerShell(Start-Process \"https://supabase.com/dashboard/project/etvsroaeyisffxfbhcbh/storage\")",
+      "PowerShell(Start-Process \"http://localhost:5173\")",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 20)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:5173\" -TimeoutSec 5 -UseBasicParsing; Write-Output \"Status: $\\($r.StatusCode\\), Length: $\\($r.Content.Length\\)\" } catch { Write-Output \"Error: $_\" })",
+      "PowerShell(Start-Process \"https://supabase.com/dashboard/project/etvsroaeyisffxfbhcbh/auth/url-configuration\")",
+      "PowerShell(Start-Process \"https://supabase.com/dashboard/project/etvsroaeyisffxfbhcbh/auth/redirect-urls\")",
+      "PowerShell(Start-Process \"https://supabase.com/dashboard/project/etvsroaeyisffxfbhcbh/settings/auth\")",
+      "PowerShell(Start-Process \"https://supabase.com/dashboard/project/etvsroaeyisffxfbhcbh/auth/users\")",
+      "PowerShell(Start-Process \"https://supabase.com/dashboard/project/etvsroaeyisffxfbhcbh/editor\")",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 30)",
+      "Skill(design-consultation)",
+      "PowerShell(Start-Process \"http://localhost:5173/\")"
+    ]
+  }
+}
