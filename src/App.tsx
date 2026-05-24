@@ -8,24 +8,6 @@ import { DiaryPage } from './components/diary/DiaryPage'
 import { AnniversariesPage } from './components/anniversaries/AnniversariesPage'
 import { SettingsPage } from './components/settings/SettingsPage'
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth()
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-cloud-400">
-        加载中...
-      </div>
-    )
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />
-  }
-
-  return <>{children}</>
-}
-
 function AppRoutes() {
   const { user, loading } = useAuth()
 

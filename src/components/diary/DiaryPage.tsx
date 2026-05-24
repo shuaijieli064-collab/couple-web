@@ -15,7 +15,6 @@ const moods = ['😊', '😍', '🥰', '😢', '😤', '🤔', '😴', '🎉']
 type ViewMode = 'timeline' | 'calendar'
 
 export function DiaryPage() {
-  const { user } = useAuth()
   const [entries, setEntries] = useState<(DiaryEntry & { author?: Profile })[]>([])
   const [showEditor, setShowEditor] = useState(false)
   const [selectedEntry, setSelectedEntry] = useState<(DiaryEntry & { author?: Profile }) | null>(null)
@@ -150,7 +149,6 @@ function DiaryCalendarView({ entries, onSelect }: { entries: (DiaryEntry & { aut
 
   const firstDay = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const entryDates = new Set(entries.map((e) => e.date))
 
   const days = []
   for (let i = 0; i < firstDay; i++) days.push(null)

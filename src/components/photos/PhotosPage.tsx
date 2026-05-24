@@ -2,12 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { Card } from '../common/Card'
-import { EmptyState } from '../common/EmptyState'
 import { Modal } from '../common/Modal'
 import { type Photo, type Album } from '../../types/database'
 
 export function PhotosPage() {
-  const { user } = useAuth()
   const [photos, setPhotos] = useState<Photo[]>([])
   const [albums, setAlbums] = useState<Album[]>([])
   const [showUpload, setShowUpload] = useState(false)

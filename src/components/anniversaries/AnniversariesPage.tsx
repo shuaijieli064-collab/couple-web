@@ -9,7 +9,6 @@ import { countdownDays, formatDate } from '../../utils/dateUtils'
 import confetti from 'canvas-confetti'
 
 export function AnniversariesPage() {
-  const { user } = useAuth()
   const [anniversaries, setAnniversaries] = useState<Anniversary[]>([])
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -79,7 +78,7 @@ export function AnniversariesPage() {
 }
 
 function AnniversaryCard({ anniversary }: { anniversary: Anniversary }) {
-  const { days, label, isToday } = countdownDays(anniversary.date, anniversary.recurring)
+  const { label, isToday } = countdownDays(anniversary.date, anniversary.recurring)
 
   return (
     <Card className={isToday ? 'bg-gradient-to-r from-sakura-50 to-peach-50 border-sakura-200 shadow-sakura-100/30 animate-[sparkle_3s_ease-in-out_infinite]' : ''}>
