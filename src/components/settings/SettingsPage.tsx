@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { Card } from '../common/Card'
 import { Avatar } from '../common/Avatar'
 import { Modal } from '../common/Modal'
+import { InstallAppGuide } from '../common/InstallPrompt'
 
 export function SettingsPage() {
   const { user, profile, refreshProfile, signOut } = useAuth()
@@ -115,6 +116,11 @@ export function SettingsPage() {
             {saving ? '保存中...' : saved ? '已保存 ✓' : '保存'}
           </button>
         </form>
+      </Card>
+
+      <Card>
+        <h2 className="text-lg font-semibold text-cloud-800 mb-4" style={{ fontFamily: "'Quicksand', sans-serif" }}>安装到手机</h2>
+        <InstallAppGuide />
       </Card>
 
       <Card>
