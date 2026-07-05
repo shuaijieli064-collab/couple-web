@@ -103,7 +103,7 @@ export function InstallPrompt() {
 }
 
 export function InstallAppGuide() {
-  const [standalone, setStandalone] = useState(true)
+  const [standalone, setStandalone] = useState(false)
   const [iosDevice, setIosDevice] = useState(false)
 
   useEffect(() => {
