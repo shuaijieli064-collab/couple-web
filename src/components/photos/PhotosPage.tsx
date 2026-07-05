@@ -5,6 +5,8 @@ import { Card } from '../common/Card'
 import { Modal } from '../common/Modal'
 import { type Photo, type Album } from '../../types/database'
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+
 export function PhotosPage() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [albums, setAlbums] = useState<Album[]>([])
@@ -14,6 +16,7 @@ export function PhotosPage() {
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null)
   const [albumPhotos, setAlbumPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
+  const [showPicker, setShowPicker] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -26,10 +29,9 @@ export function PhotosPage() {
         supabase.from('albums').select('*').order('created_at', { ascending: false }),
       ])
       if (photosRes.data) setPhotos(photosRes.data as Photo[])
-      if (albumsRes.data) setAlbums(albumsRes.data as Album[])
-      if (photosRes.data && albumsRes.data) {
+      if (albumsRes.data) {
         setAlbums(albumsRes.data.map(album => {
-          const coverPhoto = photosRes.data.find(p => p.album_id === album.id)
+          const coverPhoto = photosRes.data?.find(p => p.album_id === album.id)
           return { ...album, cover_photo_url: coverPhoto?.url ?? null }
         }) as Album[])
       }
@@ -68,7 +70,6 @@ export function PhotosPage() {
     if (selectedAlbum) openAlbum(selectedAlbum)
   }
 
-  // Album detail view
   if (selectedAlbum) {
     return (
       <div className="space-y-6">
@@ -89,6 +90,20 @@ export function PhotosPage() {
               onUploaded={() => { openAlbum(selectedAlbum); setShowUpload(false) }}
               albumId={selectedAlbum.id}
             />
+            <PickerModal
+              isOpen={showPicker}
+              onClose={() => setShowPicker(false)}
+              albumId={selectedAlbum.id}
+              onAdded={() => { openAlbum(selectedAlbum); setShowPicker(false) }}
+              allPhotos={photos}
+              albumPhotoIds={new Set(albumPhotos.map(p => p.id))}
+            />
+            <button
+              onClick={() => setShowPicker(true)}
+              className="px-4 py-2 text-sm text-sakura-600 bg-sakura-50 hover:bg-sakura-100 rounded-xl transition-colors"
+            >
+              选择照片
+            </button>
             <button
               onClick={() => setShowUpload(true)}
               className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 rounded-xl transition-all shadow-sm hover:shadow-md hover:shadow-sakura-200/40"
@@ -113,14 +128,14 @@ export function PhotosPage() {
             </div>
             <div className="max-w-xs mx-auto p-6 bg-gradient-to-br from-sakura-100 via-peach-50 to-lilac-50 rounded-2xl shadow-inner">
               <p className="text-cloud-600 text-lg font-medium mb-1">相册是空的</p>
-              <p className="text-cloud-400 text-sm">上传一些照片到这个相册吧</p>
+              <p className="text-cloud-400 text-sm">上传照片或从已有照片中选择</p>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {albumPhotos.map((photo) => (
               <div key={photo.id} className="relative group">
-                <Card onClick={() => setSelectedPhoto(photo)} className="p-0 overflow-hidden">
+                <Card onClick={() => setSelectedPhoto(photo)} className="p-0 overflow-hidden cursor-pointer">
                   <img src={photo.url} alt={photo.caption ?? ''} className="w-full h-40 object-cover" />
                   {photo.caption && <p className="p-2 text-sm text-cloud-600 truncate">{photo.caption}</p>}
                 </Card>
@@ -178,23 +193,18 @@ export function PhotosPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
                 {albums.map((album) => (
                   <div key={album.id} className="relative group">
-                    <Card onClick={() => openAlbum(album)}>
-                        {loading ? (
-                      <div className="h-full flex items-center justify-center">
-                        <span className="text-2xl animate-spin">⏳</span>
-                      </div>
-                    ) : (
-                    (album as any).cover_photo_url ? (
-                      <img src={(album as any).cover_photo_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-sakura-200 via-peach-100 to-lilac-100 flex flex-col items-center justify-center gap-1">
-                        <span className="text-2xl opacity-60">💕</span>
-                        <span className="text-xs text-cloud-400">等待上传</span>
-                      </div>
-                    )
-                    )}
-                      <h3 className="font-medium text-cloud-800 text-sm truncate">{album.title}</h3>
-                      {album.description && <p className="text-xs text-cloud-400 truncate">{album.description}</p>}
+                    <Card onClick={() => openAlbum(album)} className="cursor-pointer">
+                      {(album as any).cover_photo_url ? (
+                        <div className="-m-5 mb-3">
+                          <img src={(album as any).cover_photo_url} alt="" className="w-full h-32 object-cover rounded-t-2xl" />
+                        </div>
+                      ) : (
+                        <div className="-m-5 mb-3 h-32 bg-gradient-to-br from-sakura-200 via-peach-100 to-lilac-100 flex items-center justify-center rounded-t-2xl">
+                          <span className="text-2xl opacity-60">💕</span>
+                        </div>
+                      )}
+                      <h3 className="font-medium text-cloud-800 text-sm">{album.title}</h3>
+                      {album.description && <p className="text-xs text-cloud-400 truncate mt-0.5">{album.description}</p>}
                     </Card>
                     <button
                       onClick={() => deleteAlbum(album)}
@@ -226,7 +236,7 @@ export function PhotosPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {photos.map((photo) => (
                   <div key={photo.id} className="relative group">
-                    <Card onClick={() => setSelectedPhoto(photo)} className="p-0 overflow-hidden">
+                    <Card onClick={() => setSelectedPhoto(photo)} className="p-0 overflow-hidden cursor-pointer">
                       <img src={photo.url} alt={photo.caption ?? ''} className="w-full h-40 object-cover" />
                       {photo.caption && <p className="p-2 text-sm text-cloud-600 truncate">{photo.caption}</p>}
                     </Card>
@@ -244,7 +254,7 @@ export function PhotosPage() {
         </>
       )}
 
-      <UploadModal isOpen={showUpload} onClose={() => setShowUpload(false)} onUploaded={loadData} />
+      <UploadModal isOpen={showUpload} onClose={() => setShowUpload(false)} onUploaded={loadData} albumId={null} />
 
       <Modal isOpen={showAlbumModal} onClose={() => setShowAlbumModal(false)} title="新建相册">
         <AlbumForm onClose={() => setShowAlbumModal(false)} onCreated={() => { setShowAlbumModal(false); loadData() }} />
@@ -267,13 +277,23 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [error, setError] = useState('')
 
   async function handleFiles(files: FileList | null) {
     if (!files || !files.length || !user) return
+    setError('')
+    for (const file of Array.from(files)) {
+      if (file.size > MAX_FILE_SIZE) {
+        setError(`"${file.name}" 超过 10MB 限制，已跳过`)
+        return
+      }
+    }
+
     setUploading(true)
     setProgress(0)
 
     const total = files.length
+    let successCount = 0
     for (let i = 0; i < total; i++) {
       const file = files[i]
       const ext = file.name.split('.').pop()
@@ -290,7 +310,7 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
 
       const { data: urlData } = supabase.storage.from('photos').getPublicUrl(path)
 
-      await supabase.from('photos').insert({
+      const { error: insertError } = await supabase.from('photos').insert({
         user_id: user.id,
         album_id: albumId || null,
         storage_path: path,
@@ -298,12 +318,22 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
         caption: file.name.replace(/\.[^.]+$/, ''),
       })
 
+      if (insertError) {
+        console.error('Insert failed:', insertError)
+        continue
+      }
+
+      successCount++
       setProgress(((i + 1) / total) * 100)
     }
 
     setUploading(false)
-    onUploaded()
-    onClose()
+    // Reset file input so same files can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (successCount > 0) {
+      onUploaded()
+      onClose()
+    }
   }
 
   return (
@@ -316,7 +346,7 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
       >
         <div className="text-4xl mb-3 animate-[float-gentle_2s_ease-in-out_infinite]">📤</div>
         <p className="text-cloud-600 mb-2">拖拽照片到这里，或点击选择</p>
-        <p className="text-xs text-cloud-400">支持 JPG, PNG, WebP</p>
+        <p className="text-xs text-cloud-400">支持 JPG, PNG, WebP（单张不超过 10MB）</p>
         <input
           ref={fileInputRef}
           type="file"
@@ -326,6 +356,9 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
           onChange={(e) => handleFiles(e.target.files)}
         />
       </div>
+      {error && (
+        <p className="mt-3 text-xs text-red-500 text-center">{error}</p>
+      )}
       {uploading && (
         <div className="mt-4">
           <div className="h-2 bg-cloud-100 rounded-full overflow-hidden">
@@ -333,6 +366,94 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
           </div>
           <p className="text-xs text-cloud-400 mt-2 text-center">上传中... {Math.round(progress)}%</p>
         </div>
+      )}
+    </Modal>
+  )
+}
+
+function PickerModal({ isOpen, onClose, albumId, onAdded, allPhotos, albumPhotoIds }: {
+  isOpen: boolean
+  onClose: () => void
+  albumId: string
+  onAdded: () => void
+  allPhotos: Photo[]
+  albumPhotoIds: Set<string>
+}) {
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setSelected(new Set())
+  }, [isOpen])
+
+  const available = allPhotos.filter(p => !albumPhotoIds.has(p.id))
+
+  function toggle(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  async function addSelected() {
+    if (selected.size === 0) return
+    setSaving(true)
+    for (const id of selected) {
+      await supabase.from('photos').update({ album_id: albumId }).eq('id', id)
+    }
+    setSaving(false)
+    onAdded()
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="从相册选择照片">
+      {available.length === 0 ? (
+        <div className="text-center py-8 text-cloud-400">
+          <p>所有照片已在该相册中</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-2 max-h-96 overflow-y-auto">
+            {available.map(photo => {
+              const isSelected = selected.has(photo.id)
+              return (
+                <div
+                  key={photo.id}
+                  onClick={() => toggle(photo.id)}
+                  className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${
+                    isSelected ? 'border-sakura-500 shadow-md shadow-sakura-200/50' : 'border-transparent'
+                  }`}
+                >
+                  <img src={photo.url} alt="" className="w-full h-full object-cover" />
+                  {isSelected && (
+                    <div className="absolute inset-0 bg-sakura-500/20 flex items-center justify-center">
+                      <span className="text-white text-2xl font-bold drop-shadow-md">✓</span>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <div className="flex gap-2 justify-end mt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm text-cloud-600 hover:bg-cloud-100 rounded-xl transition-colors"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              onClick={addSelected}
+              disabled={selected.size === 0 || saving}
+              className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 disabled:opacity-50 rounded-xl transition-all"
+            >
+              {saving ? '添加中...' : `添加 ${selected.size} 张`}
+            </button>
+          </div>
+        </>
       )}
     </Modal>
   )
