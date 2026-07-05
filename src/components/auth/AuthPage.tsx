@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { InstallPrompt } from '../common/InstallPrompt'
 
 export function AuthPage() {
   const navigate = useNavigate()
@@ -101,6 +102,7 @@ export function AuthPage() {
           )}
         </div>
       </div>
+      <InstallPrompt />
     </div>
   )
 }

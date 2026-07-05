@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react'
 
 const DISMISS_KEY = 'couple-web-pwa-install-dismissed'
 
+// Module-level deferredPrompt — captured at import time, before React mounts
+let deferredPrompt: BeforeInstallPromptEvent | null = null
+let promptCaptured = false
+
 function isStandalone() {
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
@@ -17,9 +21,17 @@ function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768
 }
 
+// Register listener at module level so it fires even before auth completes
+if (typeof window !== 'undefined' && !promptCaptured) {
+  promptCaptured = true
+  window.addEventListener('beforeinstallprompt', (e: Event) => {
+    e.preventDefault()
+    deferredPrompt = e as BeforeInstallPromptEvent
+  })
+}
+
 export function InstallPrompt() {
   const [visible, setVisible] = useState(false)
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [iosDevice, setIosDevice] = useState(false)
 
   useEffect(() => {
@@ -33,9 +45,16 @@ export function InstallPrompt() {
       return
     }
 
+    // Check if the event was captured at module level
+    if (deferredPrompt) {
+      setVisible(true)
+      return
+    }
+
+    // Fallback: listen on component mount too (for late-loaded events)
     function handleBeforeInstall(event: BeforeInstallPromptEvent) {
       event.preventDefault()
-      setDeferredPrompt(event)
+      deferredPrompt = event
       setVisible(true)
     }
 
@@ -52,7 +71,7 @@ export function InstallPrompt() {
     if (!deferredPrompt) return
     await deferredPrompt.prompt()
     await deferredPrompt.userChoice
-    setDeferredPrompt(null)
+    deferredPrompt = null
     setVisible(false)
   }
 
