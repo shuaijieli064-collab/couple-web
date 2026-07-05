@@ -18,6 +18,11 @@ export function PhotosPage() {
   const [loading, setLoading] = useState(true)
   const [showPicker, setShowPicker] = useState(false)
 
+  // Multi-select mode (main page)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [showAlbumPicker, setShowAlbumPicker] = useState(false)
+
   useEffect(() => {
     loadData()
   }, [])
@@ -70,6 +75,27 @@ export function PhotosPage() {
     if (selectedAlbum) openAlbum(selectedAlbum)
   }
 
+  // ---------- multi-select ----------
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  async function batchAddToAlbum(albumId: string) {
+    for (const id of selectedIds) {
+      await supabase.from('photos').update({ album_id: albumId }).eq('id', id)
+    }
+    setSelectedIds(new Set())
+    setSelectMode(false)
+    setShowAlbumPicker(false)
+    loadData()
+  }
+
+  // ---------- album detail view ----------
   if (selectedAlbum) {
     return (
       <div className="space-y-6">
@@ -162,24 +188,50 @@ export function PhotosPage() {
     )
   }
 
-  // Main photos page
+  // ---------- main page ----------
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl md:text-2xl font-bold text-cloud-800" style={{ fontFamily: "'Quicksand', sans-serif" }}>照片 📷</h1>
         <div className="flex gap-2">
-          <button
-            onClick={() => setShowAlbumModal(true)}
-            className="px-4 py-2 text-sm text-sakura-600 bg-sakura-50 hover:bg-sakura-100 rounded-xl transition-colors"
-          >
-            新建相册
-          </button>
-          <button
-            onClick={() => setShowUpload(true)}
-            className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 rounded-xl transition-all shadow-sm hover:shadow-md hover:shadow-sakura-200/40"
-          >
-            上传照片
-          </button>
+          {selectMode ? (
+            <>
+              <button
+                onClick={() => { setSelectMode(false); setSelectedIds(new Set()) }}
+                className="px-4 py-2 text-sm text-cloud-600 bg-cloud-100 hover:bg-cloud-200 rounded-xl transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => setShowAlbumPicker(true)}
+                disabled={selectedIds.size === 0}
+                className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 disabled:opacity-50 rounded-xl transition-all"
+              >
+                添加到相册 ({selectedIds.size})
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setSelectMode(true)}
+                className="px-4 py-2 text-sm text-sakura-600 bg-sakura-50 hover:bg-sakura-100 rounded-xl transition-colors"
+              >
+                选择
+              </button>
+              <button
+                onClick={() => setShowAlbumModal(true)}
+                className="px-4 py-2 text-sm text-sakura-600 bg-sakura-50 hover:bg-sakura-100 rounded-xl transition-colors"
+              >
+                新建相册
+              </button>
+              <button
+                onClick={() => setShowUpload(true)}
+                className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 rounded-xl transition-all shadow-sm hover:shadow-md hover:shadow-sakura-200/40"
+              >
+                上传照片
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -218,7 +270,7 @@ export function PhotosPage() {
             </div>
           )}
 
-          {photos.length === 0 ? (
+          {photos.length === 0 && !selectMode ? (
             <div className="text-center py-12">
               <div className="flex justify-center gap-4 mb-6">
                 <span className="text-5xl animate-bounce">📸</span>
@@ -232,22 +284,36 @@ export function PhotosPage() {
             </div>
           ) : (
             <div>
-              <h2 className="text-lg font-semibold text-cloud-700 mb-3">所有照片</h2>
+              <h2 className="text-lg font-semibold text-cloud-700 mb-3">
+                {selectMode ? `选择照片 (已选 ${selectedIds.size})` : '所有照片'}
+              </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {photos.map((photo) => (
-                  <div key={photo.id} className="relative group">
-                    <Card onClick={() => setSelectedPhoto(photo)} className="p-0 overflow-hidden cursor-pointer">
-                      <img src={photo.url} alt={photo.caption ?? ''} className="w-full h-40 object-cover" />
-                      {photo.caption && <p className="p-2 text-sm text-cloud-600 truncate">{photo.caption}</p>}
-                    </Card>
-                    <button
-                      onClick={() => deletePhoto(photo)}
-                      className="absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+                {photos.map((photo) => {
+                  const checked = selectedIds.has(photo.id)
+                  return (
+                    <div key={photo.id} className="relative group cursor-pointer">
+                      <div onClick={() => selectMode ? toggleSelect(photo.id) : setSelectedPhoto(photo)}>
+                        <Card className={`p-0 overflow-hidden transition-all ${selectMode ? (checked ? 'ring-2 ring-sakura-500' : 'ring-1 ring-transparent') : ''}`}>
+                          <img src={photo.url} alt={photo.caption ?? ''} className="w-full h-40 object-cover" />
+                          {photo.caption && <p className="p-2 text-sm text-cloud-600 truncate">{photo.caption}</p>}
+                          {selectMode && (
+                            <div className={`absolute top-2 left-2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all ${checked ? 'bg-sakura-500 shadow-sm' : 'bg-white/70 text-cloud-400'}`}>
+                              {checked ? '✓' : ''}
+                            </div>
+                          )}
+                        </Card>
+                      </div>
+                      {!selectMode && (
+                        <button
+                          onClick={() => deletePhoto(photo)}
+                          className="absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -258,6 +324,40 @@ export function PhotosPage() {
 
       <Modal isOpen={showAlbumModal} onClose={() => setShowAlbumModal(false)} title="新建相册">
         <AlbumForm onClose={() => setShowAlbumModal(false)} onCreated={() => { setShowAlbumModal(false); loadData() }} />
+      </Modal>
+
+      {/* Album picker for batch-add */}
+      <Modal isOpen={showAlbumPicker} onClose={() => setShowAlbumPicker(false)} title="选择目标相册">
+        {albums.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-cloud-400 mb-3">还没有相册，先创建一个</p>
+            <button
+              onClick={() => { setShowAlbumPicker(false); setShowAlbumModal(true) }}
+              className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 rounded-xl"
+            >
+              新建相册
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {albums.map(album => (
+              <div
+                key={album.id}
+                onClick={() => batchAddToAlbum(album.id)}
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-sakura-50 cursor-pointer transition-colors border border-transparent hover:border-sakura-100"
+              >
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-sakura-200 via-peach-100 to-lilac-100 flex items-center justify-center shrink-0">
+                  <span className="text-lg">💕</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-cloud-800">{album.title}</p>
+                  {album.description && <p className="text-xs text-cloud-400 truncate">{album.description}</p>}
+                </div>
+                <span className="text-cloud-300 text-lg">→</span>
+              </div>
+            ))}
+          </div>
+        )}
       </Modal>
 
       <Modal isOpen={!!selectedPhoto} onClose={() => setSelectedPhoto(null)}>
@@ -282,9 +382,10 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
   async function handleFiles(files: FileList | null) {
     if (!files || !files.length || !user) return
     setError('')
+
     for (const file of Array.from(files)) {
       if (file.size > MAX_FILE_SIZE) {
-        setError(`"${file.name}" 超过 10MB 限制，已跳过`)
+        setError(`文件 "${file.name}" 超过 10MB 限制`)
         return
       }
     }
@@ -294,6 +395,7 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
 
     const total = files.length
     let successCount = 0
+
     for (let i = 0; i < total; i++) {
       const file = files[i]
       const ext = file.name.split('.').pop()
@@ -304,7 +406,7 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
         .upload(path, file)
 
       if (uploadError) {
-        console.error('Upload failed:', uploadError)
+        setError(`上传失败: ${uploadError.message}`)
         continue
       }
 
@@ -319,7 +421,7 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
       })
 
       if (insertError) {
-        console.error('Insert failed:', insertError)
+        setError(`保存失败: ${insertError.message}`)
         continue
       }
 
@@ -328,7 +430,6 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
     }
 
     setUploading(false)
-    // Reset file input so same files can be selected again
     if (fileInputRef.current) fileInputRef.current.value = ''
     if (successCount > 0) {
       onUploaded()
@@ -340,12 +441,12 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
     <Modal isOpen={isOpen} onClose={onClose} title="上传照片">
       <div
         className="border-2 border-dashed border-cloud-200 rounded-2xl p-8 text-center hover:border-sakura-300 hover:bg-sakura-50/30 transition-all cursor-pointer"
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => !uploading && fileInputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files) }}
       >
         <div className="text-4xl mb-3 animate-[float-gentle_2s_ease-in-out_infinite]">📤</div>
-        <p className="text-cloud-600 mb-2">拖拽照片到这里，或点击选择</p>
+        <p className="text-cloud-600 mb-2">{uploading ? '上传中...' : '拖拽照片到这里，或点击选择'}</p>
         <p className="text-xs text-cloud-400">支持 JPG, PNG, WebP（单张不超过 10MB）</p>
         <input
           ref={fileInputRef}
@@ -357,7 +458,7 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
         />
       </div>
       {error && (
-        <p className="mt-3 text-xs text-red-500 text-center">{error}</p>
+        <p className="mt-3 text-xs text-red-500 text-center bg-red-50 p-2 rounded-lg">{error}</p>
       )}
       {uploading && (
         <div className="mt-4">
@@ -408,7 +509,7 @@ function PickerModal({ isOpen, onClose, albumId, onAdded, allPhotos, albumPhotoI
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="从相册选择照片">
+    <Modal isOpen={isOpen} onClose={onClose} title="从已有照片选择">
       {available.length === 0 ? (
         <div className="text-center py-8 text-cloud-400">
           <p>所有照片已在该相册中</p>
