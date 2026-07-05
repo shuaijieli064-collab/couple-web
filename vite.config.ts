@@ -9,7 +9,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['favicon-32x32.png', 'apple-touch-icon.png', 'app-icon.svg'],
       manifest: {
         name: '我们的时光',
