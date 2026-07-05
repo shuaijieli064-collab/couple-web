@@ -33,6 +33,8 @@ if (typeof window !== 'undefined' && !promptCaptured) {
 export function InstallPrompt() {
   const [visible, setVisible] = useState(false)
   const [iosDevice, setIosDevice] = useState(false)
+  const [manualMode, setManualMode] = useState(false)
+  const [installing, setInstalling] = useState(false)
 
   useEffect(() => {
     if (isStandalone() || localStorage.getItem(DISMISS_KEY) || !isMobile()) return
@@ -68,11 +70,25 @@ export function InstallPrompt() {
   }
 
   async function install() {
-    if (!deferredPrompt) return
-    await deferredPrompt.prompt()
-    await deferredPrompt.userChoice
-    deferredPrompt = null
-    setVisible(false)
+    if (!deferredPrompt || installing) return
+    setInstalling(true)
+    try {
+      const promptEvent = deferredPrompt
+      await promptEvent.prompt()
+      const result = await promptEvent.userChoice
+      if (result.outcome === 'accepted') {
+        deferredPrompt = null
+        setVisible(false)
+      } else {
+        // User dismissed Chrome's dialog — show manual steps instead
+        setManualMode(true)
+      }
+    } catch {
+      // beforeinstallprompt.prompt() may fail on some devices
+      setManualMode(true)
+    } finally {
+      setInstalling(false)
+    }
   }
 
   if (!visible) return null
@@ -86,8 +102,18 @@ export function InstallPrompt() {
         <div className="flex items-start gap-3">
           <span className="text-2xl shrink-0">📲</span>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-cloud-800 text-sm">安装到主屏幕</p>
-            {iosDevice ? (
+            <p className="font-semibold text-cloud-800 text-sm">
+              {manualMode ? '手动安装' : iosDevice ? '安装到主屏幕' : '安装到主屏幕'}
+            </p>
+            {manualMode ? (
+              <div className="text-xs text-cloud-500 mt-1 leading-relaxed space-y-1">
+                <p>Chrome 浏览器菜单 →</p>
+                <ol className="list-decimal list-inside space-y-0.5">
+                  <li>点右上角 ⋮ 菜单</li>
+                  <li>选择「安装应用」或「添加到主屏幕」</li>
+                </ol>
+              </div>
+            ) : iosDevice ? (
               <p className="text-xs text-cloud-500 mt-1 leading-relaxed">
                 在 Safari 中点击底部分享按钮，选择「添加到主屏幕」，像 App 一样打开。
               </p>
@@ -97,13 +123,23 @@ export function InstallPrompt() {
               </p>
             )}
             <div className="flex gap-2 mt-3">
-              {!iosDevice && deferredPrompt && (
+              {!iosDevice && deferredPrompt && !manualMode && (
                 <button
                   type="button"
                   onClick={install}
-                  className="px-3 py-1.5 text-xs text-white bg-gradient-to-r from-sakura-400 to-sakura-500 rounded-lg"
+                  disabled={installing}
+                  className="px-3 py-1.5 text-xs text-white bg-gradient-to-r from-sakura-400 to-sakura-500 rounded-lg disabled:opacity-50"
                 >
-                  立即安装
+                  {installing ? '安装中...' : '立即安装'}
+                </button>
+              )}
+              {!iosDevice && !manualMode && !deferredPrompt && (
+                <button
+                  type="button"
+                  onClick={() => setManualMode(true)}
+                  className="px-3 py-1.5 text-xs text-sakura-500 hover:bg-sakura-50 rounded-lg transition-colors"
+                >
+                  手动安装
                 </button>
               )}
               <button
@@ -111,7 +147,7 @@ export function InstallPrompt() {
                 onClick={dismiss}
                 className="px-3 py-1.5 text-xs text-cloud-500 hover:bg-cloud-100 rounded-lg transition-colors"
               >
-                暂不
+                {manualMode ? '关闭' : '暂不'}
               </button>
             </div>
           </div>
