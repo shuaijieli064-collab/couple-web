@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react'
 import { InstallPrompt } from '../common/InstallPrompt'
+import { UpdatePrompt } from '../common/UpdatePrompt'
 import { Sidebar } from './Sidebar'
 import { BottomTab } from './BottomTab'
 
@@ -21,6 +22,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </main>
       <BottomTab />
       <InstallPrompt />
+      <UpdatePrompt />
     </div>
   )
 }
