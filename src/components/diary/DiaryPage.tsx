@@ -33,16 +33,20 @@ export function DiaryPage() {
         .order('date', { ascending: false })
 
       if (data) {
-        const entriesWithAuthors = await Promise.all(
-          (data as DiaryEntry[]).map(async (entry) => {
-            const { data: author } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', entry.user_id)
-              .single()
-            return { ...entry, author: author as Profile | undefined }
-          })
-        )
+        const diaryEntries = data as DiaryEntry[]
+        // Fetch all authors in one query to avoid N+1 requests
+        const userIds = Array.from(new Set(diaryEntries.map((e) => e.user_id)))
+        let profilesById: Record<string, Profile | undefined> = {}
+        if (userIds.length > 0) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', userIds)
+          if (profilesData) {
+            profilesById = Object.fromEntries((profilesData as Profile[]).map((p) => [p.id, p]))
+          }
+        }
+        const entriesWithAuthors = diaryEntries.map((entry) => ({ ...entry, author: profilesById[entry.user_id] }))
         setEntries(entriesWithAuthors)
       }
     } catch (err) {
@@ -156,9 +160,13 @@ function DiaryCalendarView({ entries, onSelect }: { entries: (DiaryEntry & { aut
 
   const entriesByDay: Record<string, typeof entries> = {}
   entries.forEach((entry) => {
-    const day = new Date(entry.date).getDate()
-    if (!entriesByDay[day]) entriesByDay[day] = []
-    entriesByDay[day].push(entry)
+    const entryDate = new Date(entry.date)
+    // only include entries in the currently shown month/year
+    if (entryDate.getFullYear() !== year || entryDate.getMonth() !== month) return
+    const day = entryDate.getDate()
+    const key = String(day)
+    if (!entriesByDay[key]) entriesByDay[key] = []
+    entriesByDay[key].push(entry)
   })
 
   const monthLabel = currentDate.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })
@@ -175,7 +183,7 @@ function DiaryCalendarView({ entries, onSelect }: { entries: (DiaryEntry & { aut
           <div key={d} className="text-xs text-cloud-300 py-2">{d}</div>
         ))}
         {days.map((day, i) => {
-          const hasEntries = day && entriesByDay[day]
+          const hasEntries = day ? entriesByDay[String(day)] : undefined
           const isToday = day === new Date().getDate() && month === new Date().getMonth() && year === new Date().getFullYear()
           return (
             <div

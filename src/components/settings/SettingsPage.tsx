@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { Card } from '../common/Card'
@@ -15,6 +15,12 @@ export function SettingsPage() {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Keep local form state in sync when profile is loaded/updated
+  useEffect(() => {
+    setDisplayName(profile?.display_name ?? '')
+    setMoodStatus(profile?.mood_status ?? '')
+  }, [profile])
 
   async function handleAvatarFile(file: File | undefined) {
     if (!file || !user) return
@@ -55,6 +61,15 @@ export function SettingsPage() {
       .from('profiles')
       .update({ display_name: displayName, mood_status: moodStatus, updated_at: new Date().toISOString() })
       .eq('id', profile.id)
+
+    // refresh profile in context so other pages reflect changes immediately
+    if (profile?.id) {
+      try {
+        await refreshProfile(profile.id)
+      } catch (e) {
+        console.error('Failed to refresh profile after save:', e)
+      }
+    }
 
     setSaving(false)
     setSaved(true)
