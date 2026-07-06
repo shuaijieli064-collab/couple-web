@@ -129,13 +129,6 @@ input, textarea, [contenteditable] {
   --sal: env(safe-area-inset-left, 0);
 }
 
-/* Touch devices: always show hover-dependent action buttons */
-@media (hover: none) and (pointer: coarse) {
-  .group .action-btn {
-    opacity: 1 !important;
-  }
-}
-
 /* File input overlay — sits inside <label> with absolute positioning */
 input[type="file"] {
   font-size: 100px;
