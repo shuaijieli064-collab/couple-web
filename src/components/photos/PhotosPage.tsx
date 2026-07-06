@@ -441,19 +441,20 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
     <Modal isOpen={isOpen} onClose={onClose} title="上传照片">
       <div
         className="border-2 border-dashed border-cloud-200 rounded-2xl p-8 text-center hover:border-sakura-300 hover:bg-sakura-50/30 transition-all cursor-pointer"
-        onClick={() => !uploading && fileInputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files) }}
       >
-        <div className="text-4xl mb-3 animate-[float-gentle_2s_ease-in-out_infinite]">📤</div>
-        <p className="text-cloud-600 mb-2">{uploading ? '上传中...' : '拖拽照片到这里，或点击选择'}</p>
-        <p className="text-xs text-cloud-400">支持 JPG, PNG, WebP（单张不超过 10MB）</p>
+        <label htmlFor="pwa-photo-upload" className="block cursor-pointer">
+          <div className="text-4xl mb-3 animate-[float-gentle_2s_ease-in-out_infinite]">📤</div>
+          <p className="text-cloud-600 mb-2">{uploading ? '上传中...' : '点击选择照片'}</p>
+          <p className="text-xs text-cloud-400">支持 JPG, PNG, WebP（单张不超过 10MB）</p>
+        </label>
         <input
           ref={fileInputRef}
+          id="pwa-photo-upload"
           type="file"
           accept="image/*"
           multiple
-          className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
         />
       </div>

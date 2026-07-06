@@ -83,12 +83,25 @@
   -webkit-touch-callout: none;
 }
 
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 html {
+  /* iOS smooth scrolling + prevent rubber-banding */
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: none;
+  /* Prevent zoom on input focus */
+  touch-action: manipulation;
 }
 
 body {
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--color-cloud-800);
   -webkit-user-select: none;
   user-select: none;
 }
@@ -101,26 +114,25 @@ input, textarea, [contenteditable] {
 
 /* Standalone (PWA) mode: fill entire screen */
 @media all and (display-mode: standalone) {
-  body {
+  html, body {
+    height: 100%;
     overscroll-behavior: none;
-  }
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: env(safe-area-inset-top, 0);
-    background: inherit;
-    z-index: 9999;
-    pointer-events: none;
+    overflow: hidden;
   }
 }
 
-body {
-  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  margin: 0;
-  color: var(--color-cloud-800);
+/* Prevent iOS from shifting viewport when address bar hides */
+:root {
+  --sat: env(safe-area-inset-top, 0);
+  --sar: env(safe-area-inset-right, 0);
+  --sab: env(safe-area-inset-bottom, 0);
+  --sal: env(safe-area-inset-left, 0);
+}
+
+/* File input on mobile — ensure it responds to taps */
+input[type="file"] {
+  font-size: 100px;
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
 }
