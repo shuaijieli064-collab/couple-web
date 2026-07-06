@@ -167,7 +167,7 @@ export function PhotosPage() {
                 </Card>
                 <button
                   onClick={() => deletePhoto(photo)}
-                  className="absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
+                  className="action-btn absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
                 >
                   ×
                 </button>
@@ -181,6 +181,14 @@ export function PhotosPage() {
             <div>
               <img src={selectedPhoto.url} alt={selectedPhoto.caption ?? ''} className="w-full rounded-xl" />
               {selectedPhoto.caption && <p className="mt-3 text-center text-cloud-600">{selectedPhoto.caption}</p>}
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => { deletePhoto(selectedPhoto); setSelectedPhoto(null) }}
+                  className="px-4 py-2 text-sm text-white bg-sakura-500 hover:bg-sakura-600 rounded-xl transition-colors"
+                >
+                  删除
+                </button>
+              </div>
             </div>
           )}
         </Modal>
@@ -260,7 +268,7 @@ export function PhotosPage() {
                     </Card>
                     <button
                       onClick={() => deleteAlbum(album)}
-                      className="absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
+                      className="action-btn absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
                     >
                       ×
                     </button>
@@ -306,7 +314,7 @@ export function PhotosPage() {
                       {!selectMode && (
                         <button
                           onClick={() => deletePhoto(photo)}
-                          className="absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
+                          className="action-btn absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
                         >
                           ×
                         </button>
@@ -365,6 +373,14 @@ export function PhotosPage() {
           <div>
             <img src={selectedPhoto.url} alt={selectedPhoto.caption ?? ''} className="w-full rounded-xl" />
             {selectedPhoto.caption && <p className="mt-3 text-center text-cloud-600">{selectedPhoto.caption}</p>}
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => { deletePhoto(selectedPhoto); setSelectedPhoto(null) }}
+                className="px-4 py-2 text-sm text-white bg-sakura-500 hover:bg-sakura-600 rounded-xl transition-colors"
+              >
+                删除
+              </button>
+            </div>
           </div>
         )}
       </Modal>

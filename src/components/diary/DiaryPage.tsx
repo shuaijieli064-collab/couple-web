@@ -164,7 +164,7 @@ function DiaryTimeline({ entries, onSelect, onDeleted }: { entries: (DiaryEntry 
           </Card>
           <button
             onClick={(e) => handleDelete(e, entry.id)}
-            className="absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
+            className="action-btn absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
           >
             ×
           </button>
