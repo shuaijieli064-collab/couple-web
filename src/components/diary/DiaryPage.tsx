@@ -89,9 +89,9 @@ export function DiaryPage() {
       ) : entries.length === 0 ? (
         <EmptyState icon="📝" title="还没有日记" description="写下今天的心情吧" />
       ) : viewMode === 'timeline' ? (
-        <DiaryTimeline entries={entries} onSelect={setSelectedEntry} />
+        <DiaryTimeline entries={entries} onSelect={setSelectedEntry} onDeleted={loadData} />
       ) : (
-        <DiaryCalendarView entries={entries} onSelect={setSelectedEntry} />
+        <DiaryCalendarView entries={entries} onSelect={setSelectedEntry} onDeleted={loadData} />
       )}
 
       {/* Editor */}
@@ -116,6 +116,19 @@ export function DiaryPage() {
             <div className="prose prose-sm max-w-none text-cloud-600">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedEntry.content}</ReactMarkdown>
             </div>
+            <div className="mt-6 pt-4 border-t border-cloud-100 flex justify-end">
+              <button
+                onClick={async () => {
+                  if (!confirm('确定删除这篇日记吗？')) return
+                  await supabase.from('diary_entries').delete().eq('id', selectedEntry.id)
+                  setSelectedEntry(null)
+                  loadData()
+                }}
+                className="px-4 py-2 text-sm text-white bg-sakura-500 hover:bg-sakura-600 rounded-xl transition-colors"
+              >
+                删除
+              </button>
+            </div>
           </div>
         )}
       </Modal>
@@ -123,30 +136,45 @@ export function DiaryPage() {
   )
 }
 
-function DiaryTimeline({ entries, onSelect }: { entries: (DiaryEntry & { author?: Profile })[]; onSelect: (e: DiaryEntry & { author?: Profile }) => void }) {
+function DiaryTimeline({ entries, onSelect, onDeleted }: { entries: (DiaryEntry & { author?: Profile })[]; onSelect: (e: DiaryEntry & { author?: Profile }) => void; onDeleted: () => void }) {
+  async function handleDelete(e: React.MouseEvent, entryId: string) {
+    e.stopPropagation()
+    if (!confirm('确定删除这篇日记吗？')) return
+    await supabase.from('diary_entries').delete().eq('id', entryId)
+    onDeleted()
+  }
+
   return (
     <div className="space-y-4">
       {entries.map((entry) => (
-        <Card key={entry.id} onClick={() => onSelect(entry)}>
-          <div className="flex items-start gap-3">
-            <Avatar url={entry.author?.avatar_url} name={entry.author?.display_name ?? '未知'} size="sm" />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs bg-sakura-100 text-sakura-700 px-2 py-0.5 rounded-full">{formatDate(entry.date)}</span>
-                <span className="text-xs text-cloud-400">{entry.author?.display_name}</span>
-                {entry.mood && <span className="text-base">{entry.mood}</span>}
+        <div key={entry.id} className="relative group">
+          <Card onClick={() => onSelect(entry)}>
+            <div className="flex items-start gap-3">
+              <Avatar url={entry.author?.avatar_url} name={entry.author?.display_name ?? '未知'} size="sm" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs bg-sakura-100 text-sakura-700 px-2 py-0.5 rounded-full">{formatDate(entry.date)}</span>
+                  <span className="text-xs text-cloud-400">{entry.author?.display_name}</span>
+                  {entry.mood && <span className="text-base">{entry.mood}</span>}
+                </div>
+                <h3 className="font-medium text-cloud-800 mb-1">{entry.title}</h3>
+                <p className="text-sm text-cloud-500 line-clamp-2">{entry.content}</p>
               </div>
-              <h3 className="font-medium text-cloud-800 mb-1">{entry.title}</h3>
-              <p className="text-sm text-cloud-500 line-clamp-2">{entry.content}</p>
             </div>
-          </div>
-        </Card>
+          </Card>
+          <button
+            onClick={(e) => handleDelete(e, entry.id)}
+            className="absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
+          >
+            ×
+          </button>
+        </div>
       ))}
     </div>
   )
 }
 
-function DiaryCalendarView({ entries, onSelect }: { entries: (DiaryEntry & { author?: Profile })[]; onSelect: (e: DiaryEntry & { author?: Profile }) => void }) {
+function DiaryCalendarView({ entries, onSelect, onDeleted: _onDeleted }: { entries: (DiaryEntry & { author?: Profile })[]; onSelect: (e: DiaryEntry & { author?: Profile }) => void; onDeleted: () => void }) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()

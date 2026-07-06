@@ -65,7 +65,7 @@ export function AnniversariesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {anniversaries.map((a) => (
-            <AnniversaryCard key={a.id} anniversary={a} />
+            <AnniversaryCard key={a.id} anniversary={a} onDeleted={loadData} />
           ))}
         </div>
       )}
@@ -77,20 +77,34 @@ export function AnniversariesPage() {
   )
 }
 
-function AnniversaryCard({ anniversary }: { anniversary: Anniversary }) {
+function AnniversaryCard({ anniversary, onDeleted }: { anniversary: Anniversary; onDeleted: () => void }) {
   const { label, isToday } = countdownDays(anniversary.date, anniversary.recurring)
 
+  async function handleDelete() {
+    if (!confirm(`确定删除纪念日「${anniversary.title}」吗？`)) return
+    await supabase.from('anniversaries').delete().eq('id', anniversary.id)
+    onDeleted()
+  }
+
   return (
-    <Card className={isToday ? 'bg-gradient-to-r from-sakura-50 to-peach-50 border-sakura-200 shadow-sakura-100/30 animate-[sparkle_3s_ease-in-out_infinite]' : ''}>
-      <div className="text-center">
-        <p className="text-sm text-cloud-500 mb-1">{anniversary.title}</p>
-        <p className={`text-3xl font-bold ${isToday ? 'text-sakura-600' : 'text-cloud-800'}`} style={{ fontFamily: "'Quicksand', sans-serif" }}>
-          {isToday ? '🎉 ' : ''}{label}
-        </p>
-        <p className="text-xs text-cloud-400 mt-2">{formatDate(anniversary.date)}</p>
-        <p className="text-xs text-cloud-400">{anniversary.recurring ? '每年重复' : '仅一次'}</p>
-      </div>
-    </Card>
+    <div className="relative group">
+      <Card className={isToday ? 'bg-gradient-to-r from-sakura-50 to-peach-50 border-sakura-200 shadow-sakura-100/30 animate-[sparkle_3s_ease-in-out_infinite]' : ''}>
+        <div className="text-center">
+          <p className="text-sm text-cloud-500 mb-1">{anniversary.title}</p>
+          <p className={`text-3xl font-bold ${isToday ? 'text-sakura-600' : 'text-cloud-800'}`} style={{ fontFamily: "'Quicksand', sans-serif" }}>
+            {isToday ? '🎉 ' : ''}{label}
+          </p>
+          <p className="text-xs text-cloud-400 mt-2">{formatDate(anniversary.date)}</p>
+          <p className="text-xs text-cloud-400">{anniversary.recurring ? '每年重复' : '仅一次'}</p>
+        </div>
+      </Card>
+      <button
+        onClick={handleDelete}
+        className="absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
+      >
+        ×
+      </button>
+    </div>
   )
 }
 
