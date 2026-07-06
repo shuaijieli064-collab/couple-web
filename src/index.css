@@ -136,10 +136,7 @@ input, textarea, [contenteditable] {
   }
 }
 
-/* File input on mobile — ensure it responds to taps */
+/* File input overlay — sits inside <label> with absolute positioning */
 input[type="file"] {
   font-size: 100px;
-  position: absolute;
-  left: -9999px;
-  opacity: 0;
 }
