@@ -9,14 +9,17 @@ interface Props {
 export function NotificationPanel({ onClose, placement = 'desktop' }: Props) {
   const { notifications, loading, markAllAsRead, unreadCount } = useNotifications()
 
-  const isMobile = placement === 'mobile'
-
   return (
-    <div className={`w-80 sm:w-96 bg-white rounded-2xl shadow-xl shadow-sakura-200/30 border border-sakura-100/50 overflow-hidden z-50 ${
-      isMobile
-        ? 'fixed right-4'
-        : 'absolute right-0 top-full mt-2'
-    }`} style={isMobile ? { top: 'calc(64px + env(safe-area-inset-top, 0))' } : undefined}>
+    <div
+      className="fixed w-80 sm:w-96 bg-white rounded-2xl shadow-xl shadow-sakura-200/30 border border-sakura-100/50 overflow-hidden z-50"
+      style={{
+        top: placement === 'mobile'
+          ? 'calc(64px + env(safe-area-inset-top, 0))'
+          : 'calc(16px + env(safe-area-inset-top, 0))',
+        left: placement === 'desktop' ? 'calc(16rem + 8px)' : undefined,
+        right: placement === 'mobile' ? '1rem' : undefined,
+      }}
+    >
       <div className="flex items-center justify-between px-4 py-3 border-b border-sakura-100/50 bg-gradient-to-r from-sakura-50/50 to-transparent">
         <div className="flex items-center gap-2">
           <span className="text-lg">🔔</span>
