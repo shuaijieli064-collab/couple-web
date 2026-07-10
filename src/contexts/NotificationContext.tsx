@@ -1,11 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
-import { subscribeToPush } from '../utils/pushManager'
 import type { Notification } from '../types/database'
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 interface NotificationContextValue {
   notifications: Notification[]
@@ -32,56 +28,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [toasts, setToasts] = useState<Notification[]>([])
-  const toastTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
   const unreadCount = notifications.filter(n => !n.read_at).length
 
-  const triggerPush = useCallback(async (notification: Notification) => {
-    try {
-      await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          notification_id: notification.id,
-          user_id: notification.user_id,
-          title: notification.title,
-          message: notification.message,
-          url: '/',
-        }),
-      })
-    } catch {
-      // Push trigger is best-effort
-    }
-  }, [])
-
-  const dismissToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id))
-    const timer = toastTimerRef.current.get(id)
-    if (timer) {
-      clearTimeout(timer)
-      toastTimerRef.current.delete(id)
-    }
-  }, [])
-
-  const addToast = useCallback((notification: Notification) => {
-    setToasts(prev => {
-      if (prev.some(t => t.id === notification.id)) return prev
-      return [notification, ...prev].slice(0, 3)
-    })
-    const timer = setTimeout(() => {
-      dismissToast(notification.id)
-    }, 5000)
-    toastTimerRef.current.set(notification.id, timer)
-  }, [dismissToast])
-
   useEffect(() => {
-    if (!user) return
+    if (!user) {
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
 
     const loadNotifications = async () => {
-      setLoading(true)
       const { data } = await supabase
         .from('notifications')
         .select('*')
@@ -89,16 +49,18 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         .order('created_at', { ascending: false })
         .limit(50)
 
-      if (data) setNotifications(data as Notification[])
-      setLoading(false)
+      if (!cancelled && data) setNotifications(data as Notification[])
+      if (!cancelled) setLoading(false)
     }
 
     loadNotifications()
 
-    subscribeToPush(user.id).catch(() => {})
+    if (channelRef.current) {
+      channelRef.current.unsubscribe()
+    }
 
     const channel = supabase
-      .channel('notifications-realtime')
+      .channel(`notifications-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -108,10 +70,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          const newNotification = payload.new as Notification
-          setNotifications(prev => [newNotification, ...prev])
-          addToast(newNotification)
-          triggerPush(newNotification)
+          if (cancelled) return
+          const n = payload.new as Notification
+          setNotifications(prev => [n, ...prev])
+          setToasts(prev => {
+            if (prev.some(t => t.id === n.id)) return prev
+            const next = [n, ...prev].slice(0, 3)
+            return next
+          })
+          const timer = setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== n.id))
+            timersRef.current.delete(n.id)
+          }, 5000)
+          timersRef.current.set(n.id, timer)
         }
       )
       .on(
@@ -123,6 +94,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
+          if (cancelled) return
           const updated = payload.new as Notification
           setNotifications(prev =>
             prev.map(n => n.id === updated.id ? updated : n)
@@ -131,13 +103,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       )
       .subscribe()
 
-    const timers = toastTimerRef.current
+    channelRef.current = channel
+
     return () => {
+      cancelled = true
       channel.unsubscribe()
-      timers.forEach(timer => clearTimeout(timer))
-      timers.clear()
+      channelRef.current = null
+      timersRef.current.forEach(timer => clearTimeout(timer))
+      timersRef.current.clear()
     }
-  }, [user, addToast, triggerPush])
+  }, [user?.id])
 
   const markAsRead = useCallback(async (id: string) => {
     const { error } = await supabase
@@ -178,17 +153,39 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const dismissToastStable = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id))
+    const timer = timersRef.current.get(id)
+    if (timer) {
+      clearTimeout(timer)
+      timersRef.current.delete(id)
+    }
+  }, [])
+
+  const value = useRef<NotificationContextValue>({
+    notifications,
+    unreadCount,
+    loading,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    toasts,
+    dismissToast: dismissToastStable,
+  })
+
+  value.current = {
+    notifications,
+    unreadCount,
+    loading,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    toasts,
+    dismissToast: dismissToastStable,
+  }
+
   return (
-    <NotificationContext.Provider value={{
-      notifications,
-      unreadCount,
-      loading,
-      markAsRead,
-      markAllAsRead,
-      deleteNotification,
-      toasts,
-      dismissToast,
-    }}>
+    <NotificationContext.Provider value={value.current}>
       {children}
     </NotificationContext.Provider>
   )
