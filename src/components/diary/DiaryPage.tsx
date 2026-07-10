@@ -116,6 +116,9 @@ export function DiaryPage() {
             <div className="prose prose-sm max-w-none text-cloud-600">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedEntry.content}</ReactMarkdown>
             </div>
+
+            <CommentsSection diaryId={selectedEntry.id} />
+
             <div className="mt-6 pt-4 border-t border-cloud-100 flex justify-end">
               <button
                 onClick={async () => {
@@ -315,5 +318,111 @@ function DiaryEditor({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
         </button>
       </div>
     </form>
+  )
+}
+
+// Comments UI
+function CommentsSection({ diaryId }: { diaryId: string }) {
+  const { user } = useAuth()
+  const [comments, setComments] = useState<({ id: string; diary_id: string; user_id: string; content: string; created_at: string } & { author?: Profile })[]>([])
+  const [loading, setLoading] = useState(false)
+  const [newContent, setNewContent] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!diaryId) return
+    loadComments()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [diaryId])
+
+  async function loadComments() {
+    setLoading(true)
+    try {
+      const { data } = await supabase
+        .from('diary_comments')
+        .select('*')
+        .eq('diary_id', diaryId)
+        .order('created_at', { ascending: true })
+
+      if (data) {
+        const items = data as { id: string; diary_id: string; user_id: string; content: string; created_at: string }[]
+        const userIds = Array.from(new Set(items.map((c) => c.user_id)))
+        let profilesById: Record<string, Profile | undefined> = {}
+        if (userIds.length > 0) {
+          const { data: profilesData } = await supabase.from('profiles').select('*').in('id', userIds)
+          if (profilesData) profilesById = Object.fromEntries((profilesData as Profile[]).map((p) => [p.id, p]))
+        }
+        setComments(items.map((c) => ({ ...c, author: profilesById[c.user_id] })))
+      }
+    } catch (e) {
+      console.error('Failed to load comments', e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSubmit(e?: React.FormEvent) {
+    e?.preventDefault()
+    if (!user || !newContent.trim()) return
+    setSubmitting(true)
+    try {
+      await supabase.from('diary_comments').insert({ diary_id: diaryId, user_id: user.id, content: newContent.trim() })
+      setNewContent('')
+      // reload comments
+      await loadComments()
+    } catch (e) {
+      console.error('Failed to post comment', e)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="mt-6">
+      <h3 className="text-sm font-medium text-cloud-700 mb-3">评论</h3>
+
+      {loading ? (
+        <div className="text-cloud-400 text-sm">加载中评论...</div>
+      ) : comments.length === 0 ? (
+        <div className="text-cloud-400 text-sm">还没有评论，成为第一个说话的人吧 ❤️</div>
+      ) : (
+        <div className="space-y-3">
+          {comments.map((c) => (
+            <div key={c.id} className="flex items-start gap-3">
+              <Avatar url={c.author?.avatar_url} name={c.author?.display_name ?? '他们'} size="sm" />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 text-xs text-cloud-400 mb-1">
+                  <span className="font-medium text-cloud-800">{c.author?.display_name ?? '匿名'}</span>
+                  <span>·</span>
+                  <span>{new Date(c.created_at).toLocaleString()}</span>
+                </div>
+                <div className="text-sm text-cloud-600">{c.content}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="mt-4">
+        {user ? (
+          <div className="space-y-2">
+            <textarea
+              value={newContent}
+              onChange={(e) => setNewContent(e.target.value)}
+              rows={3}
+              placeholder="写下你的评论..."
+              className="w-full px-3 py-2 rounded-xl border border-cloud-200 focus:border-sakura-400 outline-none text-sm"
+            />
+            <div className="flex justify-end">
+              <button type="submit" disabled={submitting || !newContent.trim()} className="px-3 py-1.5 text-xs text-white bg-gradient-to-r from-sakura-400 to-sakura-500 rounded-lg">
+                {submitting ? '发布中...' : '发布评论'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-sm text-cloud-500">请先登录后再发表评论。</div>
+        )}
+      </form>
+    </div>
   )
 }
