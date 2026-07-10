@@ -23,6 +23,10 @@ export function PhotosPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showAlbumPicker, setShowAlbumPicker] = useState(false)
 
+  // Multi-select mode (album detail)
+  const [albumSelectMode, setAlbumSelectMode] = useState(false)
+  const [albumSelectedIds, setAlbumSelectedIds] = useState<Set<string>>(new Set())
+
   useEffect(() => {
     loadData()
   }, [])
@@ -107,6 +111,23 @@ export function PhotosPage() {
     loadData()
   }
 
+  async function removeFromAlbum(photo: Photo) {
+    await supabase.from('photos').update({ album_id: null }).eq('id', photo.id)
+    if (selectedAlbum) openAlbum(selectedAlbum)
+    loadData()
+  }
+
+  async function batchRemoveFromAlbum() {
+    if (!confirm(`确定从相册移除选中的 ${selectedIds.size} 张照片吗？`)) return
+    for (const id of selectedIds) {
+      await supabase.from('photos').update({ album_id: null }).eq('id', id)
+    }
+    setSelectedIds(new Set())
+    setSelectMode(false)
+    loadData()
+    if (selectedAlbum) openAlbum(selectedAlbum)
+  }
+
   // ---------- album detail view ----------
   if (selectedAlbum) {
     return (
@@ -114,7 +135,7 @@ export function PhotosPage() {
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => { setSelectedAlbum(null); setAlbumPhotos([]) }}
+              onClick={() => { setSelectedAlbum(null); setAlbumPhotos([]); setAlbumSelectMode(false); setAlbumSelectedIds(new Set()) }}
               className="text-cloud-500 hover:text-sakura-500 text-lg transition-colors"
             >
               ← 返回
@@ -122,12 +143,6 @@ export function PhotosPage() {
             <h1 className="text-xl md:text-2xl font-bold text-cloud-800" style={{ fontFamily: "'Quicksand', sans-serif" }}>{selectedAlbum.title}</h1>
           </div>
           <div className="flex gap-2">
-            <UploadModal
-              isOpen={showUpload}
-              onClose={() => setShowUpload(false)}
-              onUploaded={() => { openAlbum(selectedAlbum); setShowUpload(false) }}
-              albumId={selectedAlbum.id}
-            />
             <PickerModal
               isOpen={showPicker}
               onClose={() => setShowPicker(false)}
@@ -136,24 +151,76 @@ export function PhotosPage() {
               allPhotos={photos}
               albumPhotoIds={new Set(albumPhotos.map(p => p.id))}
             />
-            <button
-              onClick={() => setShowPicker(true)}
-              className="px-4 py-2 text-sm text-sakura-600 bg-sakura-50 hover:bg-sakura-100 rounded-xl transition-colors"
-            >
-              选择照片
-            </button>
-            <button
-              onClick={() => setShowUpload(true)}
-              className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 rounded-xl transition-all shadow-sm hover:shadow-md hover:shadow-sakura-200/40"
-            >
-              上传照片
-            </button>
-            <button
-              onClick={() => deleteAlbum(selectedAlbum)}
-              className="text-sm text-cloud-300 hover:text-red-400 transition-colors"
-            >
-              删除相册
-            </button>
+            {albumSelectMode ? (
+              <>
+                <button
+                  onClick={() => { setAlbumSelectMode(false); setAlbumSelectedIds(new Set()) }}
+                  className="px-4 py-2 text-sm text-cloud-600 bg-cloud-100 hover:bg-cloud-200 rounded-xl transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={batchRemoveFromAlbum}
+                  disabled={albumSelectedIds.size === 0}
+                  className="px-4 py-2 text-sm text-white bg-sakura-400 hover:bg-sakura-500 disabled:opacity-50 rounded-xl transition-all"
+                >
+                  移除 ({albumSelectedIds.size})
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm(`确定删除选中的 ${albumSelectedIds.size} 张照片吗？`)) return
+                    for (const id of albumSelectedIds) {
+                      const photo = albumPhotos.find(p => p.id === id)
+                      if (photo) {
+                        await supabase.storage.from('photos').remove([photo.storage_path])
+                        await supabase.from('photos').delete().eq('id', id)
+                      }
+                    }
+                    setAlbumSelectedIds(new Set())
+                    setAlbumSelectMode(false)
+                    if (selectedAlbum) openAlbum(selectedAlbum)
+                    loadData()
+                  }}
+                  disabled={albumSelectedIds.size === 0}
+                  className="px-4 py-2 text-sm text-white bg-red-400 hover:bg-red-500 disabled:opacity-50 rounded-xl transition-all"
+                >
+                  删除 ({albumSelectedIds.size})
+                </button>
+              </>
+            ) : (
+              <>
+                <UploadModal
+                  isOpen={showUpload}
+                  onClose={() => setShowUpload(false)}
+                  onUploaded={() => { openAlbum(selectedAlbum); setShowUpload(false) }}
+                  albumId={selectedAlbum.id}
+                />
+                <button
+                  onClick={() => setShowPicker(true)}
+                  className="px-4 py-2 text-sm text-sakura-600 bg-sakura-50 hover:bg-sakura-100 rounded-xl transition-colors"
+                >
+                  选择照片
+                </button>
+                <button
+                  onClick={() => setShowUpload(true)}
+                  className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 rounded-xl transition-all shadow-sm hover:shadow-md hover:shadow-sakura-200/40"
+                >
+                  上传照片
+                </button>
+                <button
+                  onClick={() => setAlbumSelectMode(true)}
+                  className="px-4 py-2 text-sm text-sakura-600 bg-sakura-50 hover:bg-sakura-100 rounded-xl transition-colors"
+                >
+                  管理
+                </button>
+                <button
+                  onClick={() => deleteAlbum(selectedAlbum)}
+                  className="text-sm text-cloud-300 hover:text-red-400 transition-colors"
+                >
+                  删除相册
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -171,14 +238,29 @@ export function PhotosPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {albumPhotos.map((photo) => (
-              <div key={photo.id} className="relative group">
-                <Card onClick={() => setSelectedPhoto(photo)} className="p-0 overflow-hidden cursor-pointer">
-                  <img src={photo.url} alt={photo.caption ?? ''} className="w-full h-40 object-cover" />
-                  {photo.caption && <p className="p-2 text-sm text-cloud-600 truncate">{photo.caption}</p>}
-                </Card>
-              </div>
-            ))}
+            {albumPhotos.map((photo) => {
+              const checked = albumSelectedIds.has(photo.id)
+              return (
+                <div key={photo.id} className="relative group">
+                  <Card onClick={() => albumSelectMode ? (
+                    setAlbumSelectedIds(prev => {
+                      const next = new Set(prev)
+                      if (next.has(photo.id)) next.delete(photo.id)
+                      else next.add(photo.id)
+                      return next
+                    })
+                  ) : setSelectedPhoto(photo)} className="p-0 overflow-hidden cursor-pointer">
+                    {albumSelectMode && (
+                      <div className={`absolute top-2 left-2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all z-10 ${checked ? 'bg-sakura-500 shadow-sm' : 'bg-white/70 border-2 border-cloud-200'}`}>
+                        {checked ? '✓' : ''}
+                      </div>
+                    )}
+                    <img src={photo.url} alt={photo.caption ?? ''} className="w-full h-40 object-cover" />
+                    {photo.caption && <p className="p-2 text-sm text-cloud-600 truncate">{photo.caption}</p>}
+                  </Card>
+                </div>
+              )
+            })}
           </div>
         )}
 
@@ -187,7 +269,13 @@ export function PhotosPage() {
             <div>
               <img src={selectedPhoto.url} alt={selectedPhoto.caption ?? ''} className="w-full rounded-xl" />
               {selectedPhoto.caption && <p className="mt-3 text-center text-cloud-600">{selectedPhoto.caption}</p>}
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => { removeFromAlbum(selectedPhoto); setSelectedPhoto(null) }}
+                  className="text-sm text-cloud-300 hover:text-sakura-500 transition-colors"
+                >
+                  从相册移除
+                </button>
                 <button
                   onClick={() => { deletePhoto(selectedPhoto); setSelectedPhoto(null) }}
                   className="text-sm text-red-400 hover:text-red-500 transition-colors"
