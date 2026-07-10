@@ -4,9 +4,10 @@ import { supabase } from '../../lib/supabase'
 import { Card } from '../common/Card'
 import { EmptyState } from '../common/EmptyState'
 import { Avatar } from '../common/Avatar'
+import { LibraryManager } from './LibraryManager'
 import { type DailyTask, type TaskCompletion, type QuizQuestion, type QuizSession, type QuizAnswer, type Profile } from '../../types/database'
 
-type GameTab = 'tasks' | 'quiz'
+type GameTab = 'tasks' | 'quiz' | 'manage'
 
 const CATEGORY_COLORS: Record<string, string> = {
   sweet: 'bg-sakura-100 text-sakura-700',
@@ -147,12 +148,24 @@ export function GamesPage() {
         >
           默契问答
         </button>
+        <button
+          onClick={() => setActiveTab('manage')}
+          className={`flex-1 px-4 py-2 text-sm rounded-lg transition-colors ${
+            activeTab === 'manage'
+              ? 'bg-white text-cloud-800 shadow-sm font-medium'
+              : 'text-cloud-400'
+          }`}
+        >
+          题库管理
+        </button>
       </div>
 
       {activeTab === 'tasks' ? (
         <DailyTaskSection user={user} profile={profile} partner={partner} loadingPartner={loadingPartner} />
-      ) : (
+      ) : activeTab === 'quiz' ? (
         <QuizSection user={user} profile={profile} partner={partner} loadingPartner={loadingPartner} />
+      ) : (
+        <LibraryManager />
       )}
     </div>
   )

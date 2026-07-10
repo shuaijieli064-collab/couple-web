@@ -181,6 +181,9 @@ create table daily_tasks (
 
 alter table daily_tasks enable row level security;
 create policy "已认证用户可查看任务" on daily_tasks for select using (auth.role() = 'authenticated');
+create policy "已认证用户可添加任务" on daily_tasks for insert with check (auth.role() = 'authenticated');
+create policy "已认证用户可更新任务" on daily_tasks for update using (auth.role() = 'authenticated');
+create policy "已认证用户可删除任务" on daily_tasks for delete using (auth.role() = 'authenticated');
 
 -- ============================================
 -- Task Completions (任务完成记录)
@@ -214,6 +217,9 @@ create table quiz_questions (
 
 alter table quiz_questions enable row level security;
 create policy "已认证用户可查看题目" on quiz_questions for select using (auth.role() = 'authenticated');
+create policy "已认证用户可添加题目" on quiz_questions for insert with check (auth.role() = 'authenticated');
+create policy "已认证用户可更新题目" on quiz_questions for update using (auth.role() = 'authenticated');
+create policy "已认证用户可删除题目" on quiz_questions for delete using (auth.role() = 'authenticated');
 
 -- ============================================
 -- Quiz Sessions (问答游戏会话)
@@ -287,3 +293,53 @@ insert into quiz_questions (question, category) values
 ('Ta的起床气严重吗？', 'habit'),
 ('Ta最喜欢的动物是什么？', 'preference'),
 ('你们第一次吵架是因为什么？', 'memory');
+
+-- ============================================
+-- 扩展预设数据: 更多每日任务模板
+-- ============================================
+insert into daily_tasks (content, category) values
+('为对方做一份爱心早餐', 'sweet'),
+('一起给对方取一个新的昵称', 'funny'),
+('互相给对方画一幅简笔画', 'challenge'),
+('拍一张你们手牵手的照片', 'photo'),
+('一起列出对方的三个优点', 'sweet'),
+('给对方写一封情书（哪怕只有三句话）', 'sweet'),
+('一起看一部你们都喜欢的电影', 'memory'),
+('给对方讲一个冷笑话', 'funny'),
+('一起制定一个周末小计划', 'challenge'),
+('拍一张今天对方最好看的照片发给Ta', 'photo'),
+('为对方唱一首歌（或播放一首属于你们的歌）', 'sweet'),
+('一起做一道菜（哪怕只是煮泡面）', 'challenge'),
+('互相说出对方今天穿的衣服颜色', 'funny'),
+('一起翻一张以前的合照，回忆当时的故事', 'memory'),
+('给对方一个长达10秒的拥抱', 'sweet'),
+('一起在家附近散步15分钟', 'photo'),
+('用对方的语气发一条朋友圈/状态', 'funny'),
+('一起写下彼此的三个小愿望', 'challenge'),
+('给对方准备一个小惊喜（不需要花钱）', 'sweet'),
+('拍一段15秒的搞怪视频发给对方', 'photo');
+
+-- ============================================
+-- 扩展预设数据: 更多默契问答题目
+-- ============================================
+insert into quiz_questions (question, category) values
+('Ta最想去哪个国家旅行？', 'preference'),
+('Ta吃火锅必点的三样菜是什么？', 'food'),
+('Ta觉得自己最大的优点是什么？', 'habit'),
+('你们第一次一起吃饭吃的是什么？', 'memory'),
+('Ta心情不好的时候最喜欢做什么？', 'habit'),
+('Ta更喜欢猫还是狗？', 'preference'),
+('Ta的手机壁纸是什么？', 'preference'),
+('你们认识多久了？（精确到月）', 'memory'),
+('Ta最不能忍受的习惯是什么？', 'habit'),
+('Ta小时候的梦想是什么？', 'preference'),
+('Ta更喜欢吃甜还是吃辣？', 'food'),
+('Ta最喜欢的歌手/乐队是谁？', 'preference'),
+('Ta周末更喜欢宅家还是出门？', 'habit'),
+('你们第一次互送礼物送的是什么？', 'memory'),
+('Ta最近最想学的一项技能是什么？', 'preference'),
+('Ta喝咖啡还是奶茶？', 'food'),
+('Ta最欣赏你身上的哪个特质？', 'habit'),
+('你们第一次一起看的电影是什么？', 'memory'),
+('Ta如果有三天假期最想去哪里？', 'preference'),
+('Ta最擅长的家务是什么？', 'habit');
