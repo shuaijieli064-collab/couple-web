@@ -45,15 +45,24 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     let cancelled = false
 
     const loadNotifications = async () => {
-      const { data } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50)
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50)
 
-      if (!cancelled && data) setNotifications(data as Notification[])
-      if (!cancelled) setLoading(false)
+        if (error) {
+          console.warn('Notifications table not available:', error.message)
+        } else if (!cancelled && data) {
+          setNotifications(data as Notification[])
+        }
+      } catch (err) {
+        console.warn('Failed to load notifications:', err)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
 
     loadNotifications()
