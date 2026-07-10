@@ -167,3 +167,123 @@ create policy "用户可删除自己的文件"
 --   );
 -- create policy "任何人可查看头像"
 --   on storage.objects for select using (bucket_id = 'avatars');
+
+-- ============================================
+-- Daily Tasks (每日任务模板库)
+-- ============================================
+create table daily_tasks (
+  id uuid primary key default uuid_generate_v4(),
+  content text not null,
+  category text not null default 'sweet',
+  difficulty int default 1,
+  created_at timestamptz default now()
+);
+
+alter table daily_tasks enable row level security;
+create policy "已认证用户可查看任务" on daily_tasks for select using (auth.role() = 'authenticated');
+
+-- ============================================
+-- Task Completions (任务完成记录)
+-- ============================================
+create table task_completions (
+  id uuid primary key default uuid_generate_v4(),
+  task_id uuid references daily_tasks(id) on delete cascade not null,
+  user_id uuid references profiles(id) on delete cascade not null,
+  completed_date date not null,
+  completed_at timestamptz default now(),
+  unique(task_id, user_id, completed_date)
+);
+
+alter table task_completions enable row level security;
+create policy "已认证用户可查看完成记录" on task_completions for select using (auth.role() = 'authenticated');
+create policy "用户可创建自己的完成记录" on task_completions for insert with check (auth.uid() = user_id);
+create policy "用户可删除自己的完成记录" on task_completions for delete using (auth.uid() = user_id);
+
+create index idx_task_completions_date on task_completions(completed_date desc);
+create index idx_task_completions_user on task_completions(user_id);
+
+-- ============================================
+-- Quiz Questions (默契问答题目库)
+-- ============================================
+create table quiz_questions (
+  id uuid primary key default uuid_generate_v4(),
+  question text not null,
+  category text not null default 'memory',
+  created_at timestamptz default now()
+);
+
+alter table quiz_questions enable row level security;
+create policy "已认证用户可查看题目" on quiz_questions for select using (auth.role() = 'authenticated');
+
+-- ============================================
+-- Quiz Sessions (问答游戏会话)
+-- ============================================
+create table quiz_sessions (
+  id uuid primary key default uuid_generate_v4(),
+  created_by uuid references profiles(id) on delete cascade not null,
+  question_ids uuid[] not null,
+  player1_id uuid references profiles(id) on delete cascade not null,
+  player2_id uuid references profiles(id) on delete cascade,
+  player1_done boolean default false,
+  player2_done boolean default false,
+  status text default 'waiting',
+  created_at timestamptz default now(),
+  completed_at timestamptz
+);
+
+alter table quiz_sessions enable row level security;
+create policy "已认证用户可查看会话" on quiz_sessions for select using (auth.role() = 'authenticated');
+create policy "用户可创建会话" on quiz_sessions for insert with check (auth.uid() = created_by);
+create policy "用户可更新自己的会话" on quiz_sessions for update using (auth.uid() = player1_id or auth.uid() = player2_id);
+
+-- ============================================
+-- Quiz Answers (问答答案记录)
+-- ============================================
+create table quiz_answers (
+  id uuid primary key default uuid_generate_v4(),
+  session_id uuid references quiz_sessions(id) on delete cascade not null,
+  question_id uuid references quiz_questions(id) on delete cascade not null,
+  user_id uuid references profiles(id) on delete cascade not null,
+  answer text not null,
+  created_at timestamptz default now(),
+  unique(session_id, question_id, user_id)
+);
+
+alter table quiz_answers enable row level security;
+create policy "已认证用户可查看答案" on quiz_answers for select using (auth.role() = 'authenticated');
+create policy "用户可提交自己的答案" on quiz_answers for insert with check (auth.uid() = user_id);
+
+-- ============================================
+-- 预设数据: 每日任务模板
+-- ============================================
+insert into daily_tasks (content, category) values
+('给对方发一条语音说"我爱你"', 'sweet'),
+('一起拍一张搞怪自拍', 'photo'),
+('为对方做一件小事（倒杯水/捶捶背）', 'sweet'),
+('互相分享今天最开心的一件事', 'funny'),
+('用三个词形容对方，然后告诉Ta', 'challenge'),
+('一起回忆第一次见面的场景', 'memory'),
+('给对方写一句手写便签/留言', 'sweet'),
+('拍一张今天的天空照片发给对方', 'photo'),
+('互相问一个你一直想了解的关于Ta的问题', 'challenge'),
+('模仿对方最经典的口头禅或表情', 'funny');
+
+-- ============================================
+-- 预设数据: 默契问答题目
+-- ============================================
+insert into quiz_questions (question, category) values
+('Ta最喜欢吃什么食物？', 'food'),
+('Ta最害怕什么东西？', 'habit'),
+('你们第一次约会去了哪里？', 'memory'),
+('Ta生气的时候通常是什么表现？', 'habit'),
+('Ta最喜欢的颜色是什么？', 'preference'),
+('你们第一次牵手是在什么时候？', 'memory'),
+('Ta的口头禅是什么？', 'habit'),
+('Ta最喜欢的电影/电视剧是哪部？', 'preference'),
+('Ta最喜欢的季节是什么？', 'preference'),
+('你们之间最难忘的纪念日是哪一个？', 'memory'),
+('Ta的理想旅行目的地是哪里？', 'preference'),
+('Ta最讨厌的食物是什么？', 'food'),
+('Ta的起床气严重吗？', 'habit'),
+('Ta最喜欢的动物是什么？', 'preference'),
+('你们第一次吵架是因为什么？', 'memory');

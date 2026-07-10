@@ -6,6 +6,7 @@ import { HomePage } from './components/home/HomePage'
 import { PhotosPage } from './components/photos/PhotosPage'
 import { DiaryPage } from './components/diary/DiaryPage'
 import { AnniversariesPage } from './components/anniversaries/AnniversariesPage'
+import { GamesPage } from './components/games/GamesPage'
 import { SettingsPage } from './components/settings/SettingsPage'
 
 function AppRoutes() {
@@ -30,6 +31,7 @@ function AppRoutes() {
         <Route path="/photos" element={<PhotosPage />} />
         <Route path="/diary" element={<DiaryPage />} />
         <Route path="/anniversaries" element={<AnniversariesPage />} />
+        <Route path="/games" element={<GamesPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

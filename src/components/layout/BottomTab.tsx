@@ -5,6 +5,7 @@ const navItems = [
   { path: '/photos', label: '照片', icon: '📷' },
   { path: '/diary', label: '日记', icon: '📝' },
   { path: '/anniversaries', label: '纪念日', icon: '💝' },
+  { path: '/games', label: '游戏', icon: '🎮' },
   { path: '/settings', label: '设置', icon: '⚙️' },
 ]
 
