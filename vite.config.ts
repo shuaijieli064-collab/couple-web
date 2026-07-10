@@ -149,7 +149,6 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
       },
-      strategies: 'injectManifest',
     }),
   ],
 })
