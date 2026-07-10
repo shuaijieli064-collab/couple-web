@@ -294,3 +294,23 @@ select cron.schedule(
     and sent = false;
   $$
 );
+
+-- ============================================
+-- 5. 推送通知 Webhook（触发 Edge Function）
+-- ============================================
+-- 需要在 Supabase Dashboard 中配置：
+-- 进入 Database > Webhooks > Create webhook
+-- Name: send-push-notification
+-- Table: notifications
+-- Events: INSERT
+-- Type: HTTP Request
+-- Method: POST
+-- URL: https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/send-push
+-- Headers: Authorization: Bearer <YOUR_ANON_KEY>
+-- Body: {
+--   "notification_id": "{{record.id}}",
+--   "user_id": "{{record.user_id}}",
+--   "title": "{{record.title}}",
+--   "message": "{{record.message}}",
+--   "url": "/"
+-- }

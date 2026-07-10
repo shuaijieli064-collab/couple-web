@@ -17,6 +17,7 @@ interface NotificationContextValue {
 
 const NotificationContext = createContext<NotificationContextValue | null>(null)
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useNotifications() {
   const ctx = useContext(NotificationContext)
   if (!ctx) throw new Error('useNotifications must be used within NotificationProvider')
@@ -70,6 +71,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     loadNotifications()
 
+    subscribeToPush(user.id).catch(() => {})
+
     const channel = supabase
       .channel('notifications-realtime')
       .on(
@@ -103,10 +106,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       )
       .subscribe()
 
+    const timers = toastTimerRef.current
     return () => {
       channel.unsubscribe()
-      toastTimerRef.current.forEach(timer => clearTimeout(timer))
-      toastTimerRef.current.clear()
+      timers.forEach(timer => clearTimeout(timer))
+      timers.clear()
     }
   }, [user, addToast])
 
