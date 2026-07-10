@@ -104,12 +104,13 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         navigateFallback: '/',
         navigateFallbackDenylist: [/^\/api/, /^\/_/],
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'supabase-images',
+              cacheName: 'supabase-images-v2',
               expiration: {
                 maxEntries: 120,
                 maxAgeSeconds: 60 * 60 * 24 * 30,
@@ -123,7 +124,7 @@ export default defineConfig({
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-api',
+              cacheName: 'supabase-api-v2',
               networkTimeoutSeconds: 10,
               expiration: {
                 maxEntries: 50,

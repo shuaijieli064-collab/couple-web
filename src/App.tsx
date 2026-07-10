@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { NotificationProvider } from './contexts/NotificationContext'
 import { AuthPage } from './components/auth/AuthPage'
 import { AppLayout } from './components/layout/AppLayout'
 import { HomePage } from './components/home/HomePage'
@@ -49,11 +50,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<AuthPage />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/*" element={<AppRoutes />} />
-        </Routes>
+        <NotificationProvider>
+          <Routes>
+            <Route path="/login" element={<AuthPage />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/*" element={<AppRoutes />} />
+          </Routes>
+        </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
   )

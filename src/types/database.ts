@@ -180,3 +180,27 @@ export interface TruthDareRound {
   challenger: string
   created_at: string
 }
+
+/** 通知 */
+export interface Notification {
+  id: string
+  user_id: string
+  from_user_id: string | null
+  type: 'diary_comment' | 'checkin' | 'mood' | 'wish_update' | 'love_letter' | 'calendar_event' | 'anniversary_reminder'
+  title: string
+  message: string | null
+  related_id: string | null
+  read_at: string | null
+  created_at: string
+  from_user?: Profile
+}
+
+/** 推送订阅 */
+export interface PushSubscriptionRecord {
+  id: string
+  user_id: string
+  endpoint: string
+  p256dh: string
+  auth_key: string
+  created_at: string
+}
