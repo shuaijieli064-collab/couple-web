@@ -4,6 +4,9 @@ import { useAuth } from './AuthContext'
 import { subscribeToPush } from '../utils/pushManager'
 import type { Notification } from '../types/database'
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || ''
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
 interface NotificationContextValue {
   notifications: Notification[]
   unreadCount: number
@@ -32,6 +35,27 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const toastTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   const unreadCount = notifications.filter(n => !n.read_at).length
+
+  const triggerPush = useCallback(async (notification: Notification) => {
+    try {
+      await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          notification_id: notification.id,
+          user_id: notification.user_id,
+          title: notification.title,
+          message: notification.message,
+          url: '/',
+        }),
+      })
+    } catch {
+      // Push trigger is best-effort
+    }
+  }, [])
 
   const dismissToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id))
@@ -87,6 +111,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           const newNotification = payload.new as Notification
           setNotifications(prev => [newNotification, ...prev])
           addToast(newNotification)
+          triggerPush(newNotification)
         }
       )
       .on(
@@ -112,7 +137,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       timers.forEach(timer => clearTimeout(timer))
       timers.clear()
     }
-  }, [user, addToast])
+  }, [user, addToast, triggerPush])
 
   const markAsRead = useCallback(async (id: string) => {
     const { error } = await supabase
