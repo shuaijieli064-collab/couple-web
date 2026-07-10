@@ -102,3 +102,89 @@ export interface QuizAnswer {
   answer: string
   created_at: string
 }
+
+// ============ 异地恋功能类型 ============
+
+/** 共享日历事件 */
+export interface CalendarEvent {
+  id: string
+  title: string
+  description: string | null
+  event_date: string
+  event_type: string // 'meetup' | 'birthday' | 'anniversary' | 'holiday' | 'other'
+  created_by: string
+  created_at: string
+}
+
+/** 早安晚安打卡 */
+export interface CheckIn {
+  id: string
+  user_id: string
+  checkin_type: string // 'morning' | 'night'
+  checkin_date: string
+  checkin_time: string
+  message: string | null
+  created_at: string
+}
+
+/** 心情气泡 */
+export interface MoodBubble {
+  id: string
+  user_id: string
+  mood: string // 'happy' | 'miss' | 'love' | 'sad' | 'tired' | 'excited' | 'angry'
+  message: string | null
+  created_at: string
+  expires_at: string | null
+}
+
+/** 愿望清单 */
+export interface WishItem {
+  id: string
+  title: string
+  description: string | null
+  category: string // 'travel' | 'food' | 'activity' | 'gift' | 'other'
+  status: string // 'pending' | 'in_progress' | 'completed'
+  created_by: string
+  completed_at: string | null
+  created_at: string
+}
+
+/** 定时情书 */
+export interface LoveLetter {
+  id: string
+  from_user: string
+  to_user: string
+  title: string
+  content: string
+  scheduled_at: string
+  sent: boolean
+  read_at: string | null
+  created_at: string
+}
+
+/** 异地小游戏 - 你画我猜 */
+export interface DrawGuessRound {
+  id: string
+  word: string
+  drawer_id: string
+  guesser_id: string | null
+  image_url: string | null
+  guess: string | null
+  correct: boolean | null
+  status: string // 'drawing' | 'guessing' | 'completed'
+  created_at: string
+  completed_at: string | null
+}
+
+/** 异地小游戏 - 真心话大冒险 */
+export interface TruthDareRound {
+  id: string
+  type: string // 'truth' | 'dare'
+  content: string
+  created_by: string
+  target_user: string
+  response: string | null
+  status: string // 'pending' | 'answered' | 'skipped'
+  created_at: string
+  responded_at: string | null
+}

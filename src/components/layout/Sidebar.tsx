@@ -8,6 +8,7 @@ const navItems = [
   { path: '/diary', label: '日记', icon: '📝' },
   { path: '/anniversaries', label: '纪念日', icon: '💝' },
   { path: '/games', label: '游戏', icon: '🎮' },
+  { path: '/distance', label: '异地恋', icon: '💞' },
   { path: '/settings', label: '设置', icon: '⚙️' },
 ]
 

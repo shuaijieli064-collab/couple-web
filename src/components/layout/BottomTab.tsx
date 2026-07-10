@@ -6,15 +6,16 @@ const navItems = [
   { path: '/diary', label: '日记', icon: '📝' },
   { path: '/anniversaries', label: '纪念日', icon: '💝' },
   { path: '/games', label: '游戏', icon: '🎮' },
+  { path: '/distance', label: '异地', icon: '💞' },
   { path: '/settings', label: '设置', icon: '⚙️' },
 ]
 
 export function BottomTab() {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-t border-sakura-100/50" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}>
-      <ul className="flex items-center justify-around h-16">
+      <ul className="flex items-center justify-around h-16 overflow-x-auto no-scrollbar">
         {navItems.map((item) => (
-          <li key={item.path} className="flex-1">
+          <li key={item.path} className="flex-1 min-w-[3.5rem]">
             <NavLink
               to={item.path}
               className={({ isActive }) =>
@@ -25,10 +26,7 @@ export function BottomTab() {
                 }`
               }
             >
-              <span className={`text-lg transition-transform ${
-                // Will add animation via CSS class
-                ''
-              }`}>{item.icon}</span>
+              <span className="text-lg">{item.icon}</span>
               <span>{item.label}</span>
             </NavLink>
           </li>

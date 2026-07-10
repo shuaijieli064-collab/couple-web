@@ -343,3 +343,161 @@ insert into quiz_questions (question, category) values
 ('你们第一次一起看的电影是什么？', 'memory'),
 ('Ta如果有三天假期最想去哪里？', 'preference'),
 ('Ta最擅长的家务是什么？', 'habit');
+
+-- ============================================
+-- Calendar Events (共享日历)
+-- ============================================
+create table calendar_events (
+  id uuid primary key default uuid_generate_v4(),
+  title text not null,
+  description text,
+  event_date date not null,
+  event_type text not null default 'other',
+  created_by uuid references profiles(id) on delete cascade not null,
+  created_at timestamptz default now()
+);
+
+alter table calendar_events enable row level security;
+create policy "已认证用户可查看日历事件" on calendar_events for select using (auth.role() = 'authenticated');
+create policy "已认证用户可创建日历事件" on calendar_events for insert with check (auth.role() = 'authenticated');
+create policy "已认证用户可更新日历事件" on calendar_events for update using (auth.role() = 'authenticated');
+create policy "已认证用户可删除日历事件" on calendar_events for delete using (auth.role() = 'authenticated');
+
+create index idx_calendar_events_date on calendar_events(event_date);
+
+-- ============================================
+-- Check-ins (早安晚安打卡)
+-- ============================================
+create table checkins (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references profiles(id) on delete cascade not null,
+  checkin_type text not null check (checkin_type in ('morning', 'night')),
+  checkin_date date not null,
+  checkin_time time not null,
+  message text,
+  created_at timestamptz default now(),
+  unique(user_id, checkin_type, checkin_date)
+);
+
+alter table checkins enable row level security;
+create policy "已认证用户可查看打卡" on checkins for select using (auth.role() = 'authenticated');
+create policy "用户可创建自己的打卡" on checkins for insert with check (auth.uid() = user_id);
+create policy "用户可删除自己的打卡" on checkins for delete using (auth.uid() = user_id);
+
+create index idx_checkins_date on checkins(checkin_date desc);
+
+-- ============================================
+-- Mood Bubbles (心情气泡)
+-- ============================================
+create table mood_bubbles (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references profiles(id) on delete cascade not null,
+  mood text not null,
+  message text,
+  created_at timestamptz default now(),
+  expires_at timestamptz
+);
+
+alter table mood_bubbles enable row level security;
+create policy "已认证用户可查看心情" on mood_bubbles for select using (auth.role() = 'authenticated');
+create policy "用户可创建自己的心情" on mood_bubbles for insert with check (auth.uid() = user_id);
+create policy "用户可删除自己的心情" on mood_bubbles for delete using (auth.uid() = user_id);
+
+create index idx_mood_bubbles_created on mood_bubbles(created_at desc);
+
+-- ============================================
+-- Wish Items (愿望清单)
+-- ============================================
+create table wish_items (
+  id uuid primary key default uuid_generate_v4(),
+  title text not null,
+  description text,
+  category text not null default 'other',
+  status text not null default 'pending',
+  created_by uuid references profiles(id) on delete cascade not null,
+  completed_at timestamptz,
+  created_at timestamptz default now()
+);
+
+alter table wish_items enable row level security;
+create policy "已认证用户可查看愿望" on wish_items for select using (auth.role() = 'authenticated');
+create policy "已认证用户可创建愿望" on wish_items for insert with check (auth.role() = 'authenticated');
+create policy "已认证用户可更新愿望" on wish_items for update using (auth.role() = 'authenticated');
+create policy "已认证用户可删除愿望" on wish_items for delete using (auth.role() = 'authenticated');
+
+create index idx_wish_items_status on wish_items(status);
+
+-- ============================================
+-- Love Letters (定时情书)
+-- ============================================
+create table love_letters (
+  id uuid primary key default uuid_generate_v4(),
+  from_user uuid references profiles(id) on delete cascade not null,
+  to_user uuid references profiles(id) on delete cascade not null,
+  title text not null,
+  content text not null,
+  scheduled_at timestamptz not null,
+  sent boolean default false,
+  read_at timestamptz,
+  created_at timestamptz default now()
+);
+
+alter table love_letters enable row level security;
+create policy "已认证用户可查看情书" on love_letters for select using (auth.role() = 'authenticated');
+create policy "用户可发送情书" on love_letters for insert with check (auth.uid() = from_user);
+create policy "用户可更新自己的情书" on love_letters for update using (auth.uid() = from_user or auth.uid() = to_user);
+create policy "用户可删除自己的情书" on love_letters for delete using (auth.uid() = from_user);
+
+create index idx_love_letters_scheduled on love_letters(scheduled_at);
+create index idx_love_letters_sent on love_letters(sent);
+
+-- ============================================
+-- Draw Guess Rounds (你画我猜)
+-- ============================================
+create table draw_guess_rounds (
+  id uuid primary key default uuid_generate_v4(),
+  word text not null,
+  drawer_id uuid references profiles(id) on delete cascade not null,
+  guesser_id uuid references profiles(id) on delete cascade,
+  image_url text,
+  guess text,
+  correct boolean,
+  status text not null default 'drawing',
+  created_at timestamptz default now(),
+  completed_at timestamptz
+);
+
+alter table draw_guess_rounds enable row level security;
+create policy "已认证用户可查看你画我猜" on draw_guess_rounds for select using (auth.role() = 'authenticated');
+create policy "已认证用户可创建你画我猜" on draw_guess_rounds for insert with check (auth.role() = 'authenticated');
+create policy "已认证用户可更新你画我猜" on draw_guess_rounds for update using (auth.role() = 'authenticated');
+
+-- ============================================
+-- Truth or Dare Rounds (真心话大冒险)
+-- ============================================
+create table truth_dare_rounds (
+  id uuid primary key default uuid_generate_v4(),
+  type text not null check (type in ('truth', 'dare')),
+  content text not null,
+  created_by uuid references profiles(id) on delete cascade not null,
+  target_user uuid references profiles(id) on delete cascade not null,
+  response text,
+  status text not null default 'pending',
+  created_at timestamptz default now(),
+  responded_at timestamptz
+);
+
+alter table truth_dare_rounds enable row level security;
+create policy "已认证用户可查看真心话大冒险" on truth_dare_rounds for select using (auth.role() = 'authenticated');
+create policy "已认证用户可创建真心话大冒险" on truth_dare_rounds for insert with check (auth.role() = 'authenticated');
+create policy "已认证用户可更新真心话大冒险" on truth_dare_rounds for update using (auth.role() = 'authenticated');
+
+-- ============================================
+-- 预设数据: 你画我猜词库
+-- ============================================
+-- (词库在前端代码中维护，不需要预设)
+
+-- ============================================
+-- 预设数据: 真心话大冒险题库
+-- ============================================
+-- (题库在前端代码中维护，不需要预设)
