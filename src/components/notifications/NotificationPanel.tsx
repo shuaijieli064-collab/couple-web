@@ -9,15 +9,20 @@ interface Props {
 export function NotificationPanel({ onClose, placement = 'desktop' }: Props) {
   const { notifications, loading, markAllAsRead, unreadCount } = useNotifications()
 
+  const isMobile = placement === 'mobile'
+
   return (
     <div
-      className="fixed w-80 sm:w-96 bg-white rounded-2xl shadow-xl shadow-sakura-200/30 border border-sakura-100/50 overflow-hidden z-50"
+      data-notification-panel
+      className={`fixed w-80 sm:w-96 bg-white rounded-2xl shadow-xl shadow-sakura-200/30 border border-sakura-100/50 overflow-hidden z-50 ${
+        isMobile ? '' : 'animate-[slideInRight_0.2s_ease-out]'
+      }`}
       style={{
-        top: placement === 'mobile'
+        top: isMobile
           ? 'calc(64px + env(safe-area-inset-top, 0))'
-          : 'calc(16px + env(safe-area-inset-top, 0))',
-        left: placement === 'desktop' ? 'calc(16rem + 8px)' : undefined,
-        right: placement === 'mobile' ? '1rem' : undefined,
+          : 'calc(12px + env(safe-area-inset-top, 0))',
+        right: isMobile ? '1rem' : 'auto',
+        left: isMobile ? 'auto' : 'calc(16rem + 12px)',
       }}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-sakura-100/50 bg-gradient-to-r from-sakura-50/50 to-transparent">
@@ -41,14 +46,14 @@ export function NotificationPanel({ onClose, placement = 'desktop' }: Props) {
           )}
           <button
             onClick={onClose}
-            className="text-cloud-400 hover:text-cloud-600 text-sm transition-colors p-1 rounded"
+            className="text-cloud-400 hover:text-cloud-600 text-sm transition-colors p-1 rounded hover:bg-cloud-50"
           >
             ✕
           </button>
         </div>
       </div>
 
-      <div className="max-h-80 overflow-y-auto">
+      <div className="max-h-[60vh] overflow-y-auto">
         {loading ? (
           <div className="p-8 text-center text-cloud-400 text-sm">加载中...</div>
         ) : notifications.length === 0 ? (
@@ -57,7 +62,7 @@ export function NotificationPanel({ onClose, placement = 'desktop' }: Props) {
             <p className="text-sm text-cloud-400">暂无通知</p>
           </div>
         ) : (
-          <div className="space-y-0">
+          <div className="divide-y divide-sakura-50/80">
             {notifications.map(n => (
               <NotificationItem key={n.id} notification={n} />
             ))}

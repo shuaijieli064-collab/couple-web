@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNotifications } from '../../contexts/NotificationContext'
 import { NotificationPanel } from './NotificationPanel'
 
@@ -9,21 +9,25 @@ interface NotificationBellProps {
 export function NotificationBell({ placement = 'desktop' }: NotificationBellProps) {
   const { unreadCount } = useNotifications()
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!open) return
+
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target as HTMLElement
+      if (!target.closest('[data-notification-panel]') && !target.closest('[data-notification-bell]')) {
         setOpen(false)
       }
     }
+
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [open])
 
   return (
-    <div className="relative" ref={ref}>
+    <>
       <button
+        data-notification-bell
         onClick={() => setOpen(!open)}
         className="relative p-2 rounded-xl text-cloud-400 hover:text-sakura-500 hover:bg-sakura-50 transition-all duration-200"
       >
@@ -37,6 +41,6 @@ export function NotificationBell({ placement = 'desktop' }: NotificationBellProp
       {open && (
         <NotificationPanel onClose={() => setOpen(false)} placement={placement} />
       )}
-    </div>
+    </>
   )
 }
