@@ -118,14 +118,14 @@ export function PhotosPage() {
   }
 
   async function batchRemoveFromAlbum() {
-    if (!confirm(`确定从相册移除选中的 ${selectedIds.size} 张照片吗？`)) return
-    for (const id of selectedIds) {
+    if (!confirm(`确定从相册移除选中的 ${albumSelectedIds.size} 张照片吗？`)) return
+    for (const id of albumSelectedIds) {
       await supabase.from('photos').update({ album_id: null }).eq('id', id)
     }
-    setSelectedIds(new Set())
-    setSelectMode(false)
-    loadData()
+    setAlbumSelectedIds(new Set())
+    setAlbumSelectMode(false)
     if (selectedAlbum) openAlbum(selectedAlbum)
+    loadData()
   }
 
   // ---------- album detail view ----------
