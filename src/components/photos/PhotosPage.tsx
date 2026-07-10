@@ -138,7 +138,7 @@ export function PhotosPage() {
             </button>
             <button
               onClick={() => deleteAlbum(selectedAlbum)}
-              className="px-4 py-2 text-sm text-red-500 border border-red-200 hover:bg-red-50 rounded-xl transition-colors"
+              className="text-sm text-cloud-300 hover:text-red-400 transition-colors"
             >
               删除相册
             </button>
@@ -167,7 +167,7 @@ export function PhotosPage() {
                 </Card>
                 <button
                   onClick={() => deletePhoto(photo)}
-                  className="absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-60 hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
+                  className="absolute top-1 right-1 text-cloud-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex items-center justify-center text-lg w-7 h-7"
                 >
                   ×
                 </button>
@@ -184,7 +184,7 @@ export function PhotosPage() {
               <div className="mt-4 flex justify-end">
                 <button
                   onClick={() => { deletePhoto(selectedPhoto); setSelectedPhoto(null) }}
-                  className="px-4 py-2 text-sm text-white bg-sakura-500 hover:bg-sakura-600 rounded-xl transition-colors"
+                  className="text-sm text-cloud-300 hover:text-red-400 transition-colors"
                 >
                   删除
                 </button>
@@ -268,7 +268,7 @@ export function PhotosPage() {
                     </Card>
                     <button
                       onClick={() => deleteAlbum(album)}
-                      className="absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-60 hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
+                      className="absolute top-1 right-1 text-cloud-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex items-center justify-center text-lg w-7 h-7"
                     >
                       ×
                     </button>
@@ -314,7 +314,7 @@ export function PhotosPage() {
                       {!selectMode && (
                         <button
                           onClick={() => deletePhoto(photo)}
-                          className="absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-60 hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
+                          className="absolute top-1 right-1 text-cloud-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex items-center justify-center text-lg w-7 h-7"
                         >
                           ×
                         </button>
@@ -376,7 +376,7 @@ export function PhotosPage() {
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => { deletePhoto(selectedPhoto); setSelectedPhoto(null) }}
-                className="px-4 py-2 text-sm text-white bg-sakura-500 hover:bg-sakura-600 rounded-xl transition-colors"
+                className="text-sm text-cloud-300 hover:text-red-400 transition-colors"
               >
                 删除
               </button>

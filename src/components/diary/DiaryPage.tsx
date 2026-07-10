@@ -127,7 +127,7 @@ export function DiaryPage() {
                   setSelectedEntry(null)
                   loadData()
                 }}
-                className="px-4 py-2 text-sm text-white bg-sakura-500 hover:bg-sakura-600 rounded-xl transition-colors"
+                className="text-sm text-cloud-300 hover:text-red-400 transition-colors"
               >
                 删除
               </button>
@@ -167,7 +167,7 @@ function DiaryTimeline({ entries, onSelect, onDeleted }: { entries: (DiaryEntry 
           </Card>
           <button
             onClick={(e) => handleDelete(e, entry.id)}
-            className="absolute top-2 right-2 bg-sakura-500 text-white w-7 h-7 rounded-full opacity-60 hover:opacity-100 transition-opacity flex items-center justify-center text-sm shadow-sm"
+            className="absolute top-1 right-1 text-cloud-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex items-center justify-center text-lg w-7 h-7"
           >
             ×
           </button>
