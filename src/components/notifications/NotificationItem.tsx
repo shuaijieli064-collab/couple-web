@@ -24,7 +24,7 @@ export function NotificationItem({ notification }: { notification: Notification 
 
   return (
     <div
-      className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-all duration-200 ${
+      className={`group flex items-start gap-3 px-4 py-3 cursor-pointer transition-all duration-200 ${
         isUnread
           ? 'bg-sakura-50/50 hover:bg-sakura-50'
           : 'hover:bg-cloud-50/50'
@@ -45,14 +45,14 @@ export function NotificationItem({ notification }: { notification: Notification 
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
         {isUnread && (
-          <div className="w-2 h-2 rounded-full bg-sakura-500" />
+          <div className="w-2 h-2 rounded-full bg-sakura-500 animate-pulse" />
         )}
         <button
           onClick={(e) => {
             e.stopPropagation()
             deleteNotification(notification.id)
           }}
-          className="text-cloud-300 hover:text-cloud-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity p-1"
+          className="text-cloud-300 hover:text-red-400 text-xs opacity-0 group-hover:opacity-100 hover:bg-red-50 rounded p-1 transition-all"
         >
           ✕
         </button>
