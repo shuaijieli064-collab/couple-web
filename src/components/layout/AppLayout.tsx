@@ -18,12 +18,12 @@ export function AppLayout({ children }: AppLayoutProps) {
       <Sidebar className="hidden md:flex" />
       <main className="flex-1 overflow-y-auto pb-20 md:pb-6">
         <div className="max-w-6xl mx-auto p-4 md:p-6">
-          <div className="md:hidden flex justify-end mb-2">
-            <NotificationBell />
-          </div>
           {children}
         </div>
       </main>
+      <div className="md:hidden fixed top-4 right-4 z-50" style={{ top: 'calc(4px + env(safe-area-inset-top, 0))' }}>
+        <NotificationBell />
+      </div>
       <BottomTab />
       <InstallPrompt />
       <ToastContainer />
