@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 import type { Notification } from '../types/database'
@@ -31,7 +31,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
-  const unreadCount = notifications.filter(n => !n.read_at).length
+  const unreadCount = useMemo(
+    () => notifications.filter(n => !n.read_at).length,
+    [notifications]
+  )
 
   useEffect(() => {
     if (!user) {
@@ -75,8 +78,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           setNotifications(prev => [n, ...prev])
           setToasts(prev => {
             if (prev.some(t => t.id === n.id)) return prev
-            const next = [n, ...prev].slice(0, 3)
-            return next
+            return [n, ...prev].slice(0, 3)
           })
           const timer = setTimeout(() => {
             setToasts(prev => prev.filter(t => t.id !== n.id))
@@ -153,7 +155,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const dismissToastStable = useCallback((id: string) => {
+  const dismissToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id))
     const timer = timersRef.current.get(id)
     if (timer) {
@@ -162,7 +164,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const value = useRef<NotificationContextValue>({
+  const value = useMemo<NotificationContextValue>(() => ({
     notifications,
     unreadCount,
     loading,
@@ -170,22 +172,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     markAllAsRead,
     deleteNotification,
     toasts,
-    dismissToast: dismissToastStable,
-  })
-
-  value.current = {
-    notifications,
-    unreadCount,
-    loading,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-    toasts,
-    dismissToast: dismissToastStable,
-  }
+    dismissToast,
+  }), [notifications, unreadCount, loading, markAsRead, markAllAsRead, deleteNotification, toasts, dismissToast])
 
   return (
-    <NotificationContext.Provider value={value.current}>
+    <NotificationContext.Provider value={value}>
       {children}
     </NotificationContext.Provider>
   )
