@@ -139,13 +139,12 @@ export function DiaryPage() {
         <DiaryTimeline
           entries={entries}
           onSelect={setSelectedEntry}
-          onDeleted={loadData}
           selectMode={selectMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
         />
       ) : (
-        <DiaryCalendarView entries={entries} onSelect={setSelectedEntry} onDeleted={loadData} />
+        <DiaryCalendarView entries={entries} onSelect={setSelectedEntry} />
       )}
 
       {/* Editor */}
@@ -193,10 +192,9 @@ export function DiaryPage() {
   )
 }
 
-function DiaryTimeline({ entries, onSelect, onDeleted, selectMode, selectedIds, onToggleSelect }: {
+function DiaryTimeline({ entries, onSelect, selectMode, selectedIds, onToggleSelect }: {
   entries: (DiaryEntry & { author?: Profile })[]
   onSelect: (e: DiaryEntry & { author?: Profile }) => void
-  onDeleted: () => void
   selectMode: boolean
   selectedIds: Set<string>
   onToggleSelect: (id: string) => void
@@ -233,7 +231,7 @@ function DiaryTimeline({ entries, onSelect, onDeleted, selectMode, selectedIds, 
   )
 }
 
-function DiaryCalendarView({ entries, onSelect, onDeleted: _onDeleted }: { entries: (DiaryEntry & { author?: Profile })[]; onSelect: (e: DiaryEntry & { author?: Profile }) => void; onDeleted: () => void }) {
+function DiaryCalendarView({ entries, onSelect }: { entries: (DiaryEntry & { author?: Profile })[]; onSelect: (e: DiaryEntry & { author?: Profile }) => void }) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
