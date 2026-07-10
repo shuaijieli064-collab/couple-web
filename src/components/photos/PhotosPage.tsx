@@ -95,6 +95,18 @@ export function PhotosPage() {
     loadData()
   }
 
+  async function batchDeletePhotos() {
+    if (!confirm(`确定删除选中的 ${selectedIds.size} 张照片吗？`)) return
+    const selected = photos.filter(p => selectedIds.has(p.id))
+    for (const photo of selected) {
+      await supabase.storage.from('photos').remove([photo.storage_path])
+      await supabase.from('photos').delete().eq('id', photo.id)
+    }
+    setSelectedIds(new Set())
+    setSelectMode(false)
+    loadData()
+  }
+
   // ---------- album detail view ----------
   if (selectedAlbum) {
     return (
@@ -165,12 +177,6 @@ export function PhotosPage() {
                   <img src={photo.url} alt={photo.caption ?? ''} className="w-full h-40 object-cover" />
                   {photo.caption && <p className="p-2 text-sm text-cloud-600 truncate">{photo.caption}</p>}
                 </Card>
-                <button
-                  onClick={() => deletePhoto(photo)}
-                  className="absolute top-2 right-2 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
-                >
-                  删除
-                </button>
               </div>
             ))}
           </div>
@@ -184,7 +190,7 @@ export function PhotosPage() {
               <div className="mt-4 flex justify-end">
                 <button
                   onClick={() => { deletePhoto(selectedPhoto); setSelectedPhoto(null) }}
-                  className="text-sm text-cloud-300 hover:text-red-400 transition-colors"
+                  className="text-sm text-red-400 hover:text-red-500 transition-colors"
                 >
                   删除
                 </button>
@@ -216,6 +222,13 @@ export function PhotosPage() {
                 className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 disabled:opacity-50 rounded-xl transition-all"
               >
                 添加到相册 ({selectedIds.size})
+              </button>
+              <button
+                onClick={batchDeletePhotos}
+                disabled={selectedIds.size === 0}
+                className="px-4 py-2 text-sm text-white bg-red-400 hover:bg-red-500 disabled:opacity-50 rounded-xl transition-all"
+              >
+                删除 ({selectedIds.size})
               </button>
             </>
           ) : (
@@ -266,12 +279,6 @@ export function PhotosPage() {
                       <h3 className="font-medium text-cloud-800 text-sm">{album.title}</h3>
                       {album.description && <p className="text-xs text-cloud-400 truncate mt-0.5">{album.description}</p>}
                     </Card>
-                    <button
-                      onClick={() => deleteAlbum(album)}
-                      className="absolute top-2 right-2 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
-                    >
-                      删除
-                    </button>
                   </div>
                 ))}
               </div>
@@ -311,14 +318,7 @@ export function PhotosPage() {
                           )}
                         </Card>
                       </div>
-                      {!selectMode && (
-                        <button
-                          onClick={() => deletePhoto(photo)}
-                          className="absolute top-2 right-2 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
-                        >
-                          删除
-                        </button>
-                      )}
+                      
                     </div>
                   )
                 })}
@@ -376,7 +376,7 @@ export function PhotosPage() {
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => { deletePhoto(selectedPhoto); setSelectedPhoto(null) }}
-                className="text-sm text-cloud-300 hover:text-red-400 transition-colors"
+                className="text-sm text-red-400 hover:text-red-500 transition-colors"
               >
                 删除
               </button>

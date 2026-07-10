@@ -20,10 +20,31 @@ export function DiaryPage() {
   const [selectedEntry, setSelectedEntry] = useState<(DiaryEntry & { author?: Profile }) | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('timeline')
   const [loading, setLoading] = useState(true)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadData()
   }, [])
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  async function batchDeleteEntries() {
+    if (!confirm(`确定删除选中的 ${selectedIds.size} 篇日记吗？`)) return
+    for (const id of selectedIds) {
+      await supabase.from('diary_entries').delete().eq('id', id)
+    }
+    setSelectedIds(new Set())
+    setSelectMode(false)
+    loadData()
+  }
 
   async function loadData() {
     try {
@@ -61,26 +82,52 @@ export function DiaryPage() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl md:text-2xl font-bold text-cloud-800" style={{ fontFamily: "'Quicksand', sans-serif" }}>日记 📝</h1>
         <div className="flex gap-2">
-          <div className="flex bg-sakura-100/60 rounded-xl p-1">
-            <button
-              onClick={() => setViewMode('timeline')}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${viewMode === 'timeline' ? 'bg-white text-cloud-800 shadow-sm' : 'text-cloud-400'}`}
-            >
-              时间线
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${viewMode === 'calendar' ? 'bg-white text-cloud-800 shadow-sm' : 'text-cloud-400'}`}
-            >
-              日历
-            </button>
-          </div>
-          <button
-            onClick={() => setShowEditor(true)}
-            className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 rounded-xl transition-all shadow-sm hover:shadow-md hover:shadow-sakura-200/40"
-          >
-            写日记
-          </button>
+          {selectMode ? (
+            <>
+              <button
+                onClick={() => { setSelectMode(false); setSelectedIds(new Set()) }}
+                className="px-4 py-2 text-sm text-cloud-600 bg-cloud-100 hover:bg-cloud-200 rounded-xl transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={batchDeleteEntries}
+                disabled={selectedIds.size === 0}
+                className="px-4 py-2 text-sm text-white bg-red-400 hover:bg-red-500 disabled:opacity-50 rounded-xl transition-all"
+              >
+                删除 ({selectedIds.size})
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex bg-sakura-100/60 rounded-xl p-1">
+                <button
+                  onClick={() => setViewMode('timeline')}
+                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${viewMode === 'timeline' ? 'bg-white text-cloud-800 shadow-sm' : 'text-cloud-400'}`}
+                >
+                  时间线
+                </button>
+                <button
+                  onClick={() => setViewMode('calendar')}
+                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${viewMode === 'calendar' ? 'bg-white text-cloud-800 shadow-sm' : 'text-cloud-400'}`}
+                >
+                  日历
+                </button>
+              </div>
+              <button
+                onClick={() => setSelectMode(true)}
+                className="px-4 py-2 text-sm text-sakura-600 bg-sakura-50 hover:bg-sakura-100 rounded-xl transition-colors"
+              >
+                选择
+              </button>
+              <button
+                onClick={() => setShowEditor(true)}
+                className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 rounded-xl transition-all shadow-sm hover:shadow-md hover:shadow-sakura-200/40"
+              >
+                写日记
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -89,7 +136,14 @@ export function DiaryPage() {
       ) : entries.length === 0 ? (
         <EmptyState icon="📝" title="还没有日记" description="写下今天的心情吧" />
       ) : viewMode === 'timeline' ? (
-        <DiaryTimeline entries={entries} onSelect={setSelectedEntry} onDeleted={loadData} />
+        <DiaryTimeline
+          entries={entries}
+          onSelect={setSelectedEntry}
+          onDeleted={loadData}
+          selectMode={selectMode}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+        />
       ) : (
         <DiaryCalendarView entries={entries} onSelect={setSelectedEntry} onDeleted={loadData} />
       )}
@@ -127,7 +181,7 @@ export function DiaryPage() {
                   setSelectedEntry(null)
                   loadData()
                 }}
-                className="text-sm text-cloud-300 hover:text-red-400 transition-colors"
+                className="text-sm text-red-400 hover:text-red-500 transition-colors"
               >
                 删除
               </button>
@@ -139,40 +193,42 @@ export function DiaryPage() {
   )
 }
 
-function DiaryTimeline({ entries, onSelect, onDeleted }: { entries: (DiaryEntry & { author?: Profile })[]; onSelect: (e: DiaryEntry & { author?: Profile }) => void; onDeleted: () => void }) {
-  async function handleDelete(e: React.MouseEvent, entryId: string) {
-    e.stopPropagation()
-    if (!confirm('确定删除这篇日记吗？')) return
-    await supabase.from('diary_entries').delete().eq('id', entryId)
-    onDeleted()
-  }
-
+function DiaryTimeline({ entries, onSelect, onDeleted, selectMode, selectedIds, onToggleSelect }: {
+  entries: (DiaryEntry & { author?: Profile })[]
+  onSelect: (e: DiaryEntry & { author?: Profile }) => void
+  onDeleted: () => void
+  selectMode: boolean
+  selectedIds: Set<string>
+  onToggleSelect: (id: string) => void
+}) {
   return (
     <div className="space-y-4">
-      {entries.map((entry) => (
-        <div key={entry.id} className="relative group">
-          <Card onClick={() => onSelect(entry)}>
-            <div className="flex items-start gap-3">
-              <Avatar url={entry.author?.avatar_url} name={entry.author?.display_name ?? '未知'} size="sm" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs bg-sakura-100 text-sakura-700 px-2 py-0.5 rounded-full">{formatDate(entry.date)}</span>
-                  <span className="text-xs text-cloud-400">{entry.author?.display_name}</span>
-                  {entry.mood && <span className="text-base">{entry.mood}</span>}
+      {entries.map((entry) => {
+        const checked = selectedIds.has(entry.id)
+        return (
+          <div key={entry.id} className="relative group">
+            <Card onClick={() => selectMode ? onToggleSelect(entry.id) : onSelect(entry)}>
+              <div className="flex items-start gap-3">
+                {selectMode && (
+                  <div className={`mt-1 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all shrink-0 ${checked ? 'bg-sakura-500 shadow-sm' : 'bg-white/70 border-2 border-cloud-200'}`}>
+                    {checked ? '✓' : ''}
+                  </div>
+                )}
+                <Avatar url={entry.author?.avatar_url} name={entry.author?.display_name ?? '未知'} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs bg-sakura-100 text-sakura-700 px-2 py-0.5 rounded-full">{formatDate(entry.date)}</span>
+                    <span className="text-xs text-cloud-400">{entry.author?.display_name}</span>
+                    {entry.mood && <span className="text-base">{entry.mood}</span>}
+                  </div>
+                  <h3 className="font-medium text-cloud-800 mb-1">{entry.title}</h3>
+                  <p className="text-sm text-cloud-500 line-clamp-2">{entry.content}</p>
                 </div>
-                <h3 className="font-medium text-cloud-800 mb-1">{entry.title}</h3>
-                <p className="text-sm text-cloud-500 line-clamp-2">{entry.content}</p>
               </div>
-            </div>
-          </Card>
-          <button
-            onClick={(e) => handleDelete(e, entry.id)}
-            className="absolute top-2 right-2 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
-          >
-            删除
-          </button>
-        </div>
-      ))}
+            </Card>
+          </div>
+        )
+      })}
     </div>
   )
 }

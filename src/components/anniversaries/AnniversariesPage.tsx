@@ -12,10 +12,32 @@ export function AnniversariesPage() {
   const [anniversaries, setAnniversaries] = useState<Anniversary[]>([])
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectedAnniversary, setSelectedAnniversary] = useState<Anniversary | null>(null)
 
   useEffect(() => {
     loadData()
   }, [])
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  async function batchDelete() {
+    if (!confirm(`确定删除选中的 ${selectedIds.size} 个纪念日吗？`)) return
+    for (const id of selectedIds) {
+      await supabase.from('anniversaries').delete().eq('id', id)
+    }
+    setSelectedIds(new Set())
+    setSelectMode(false)
+    loadData()
+  }
 
   async function loadData() {
     try {
@@ -42,16 +64,51 @@ export function AnniversariesPage() {
     return isToday
   })
 
+  async function handleDetailDelete(anniversary: Anniversary) {
+    if (!confirm(`确定删除纪念日「${anniversary.title}」吗？`)) return
+    await supabase.from('anniversaries').delete().eq('id', anniversary.id)
+    setSelectedAnniversary(null)
+    loadData()
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl md:text-2xl font-bold text-cloud-800" style={{ fontFamily: "'Quicksand', sans-serif" }}>纪念日 💝</h1>
-        <button
-          onClick={() => setShowForm(true)}
-          className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 rounded-xl transition-all shadow-sm hover:shadow-md hover:shadow-sakura-200/40"
-        >
-          添加纪念日
-        </button>
+        <div className="flex gap-2">
+          {selectMode ? (
+            <>
+              <button
+                onClick={() => { setSelectMode(false); setSelectedIds(new Set()) }}
+                className="px-4 py-2 text-sm text-cloud-600 bg-cloud-100 hover:bg-cloud-200 rounded-xl transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={batchDelete}
+                disabled={selectedIds.size === 0}
+                className="px-4 py-2 text-sm text-white bg-red-400 hover:bg-red-500 disabled:opacity-50 rounded-xl transition-all"
+              >
+                删除 ({selectedIds.size})
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setSelectMode(true)}
+                className="px-4 py-2 text-sm text-sakura-600 bg-sakura-50 hover:bg-sakura-100 rounded-xl transition-colors"
+              >
+                选择
+              </button>
+              <button
+                onClick={() => setShowForm(true)}
+                className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 rounded-xl transition-all shadow-sm hover:shadow-md hover:shadow-sakura-200/40"
+              >
+                添加纪念日
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {todayAnniversary && (
@@ -65,7 +122,13 @@ export function AnniversariesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {anniversaries.map((a) => (
-            <AnniversaryCard key={a.id} anniversary={a} onDeleted={loadData} />
+            <AnniversaryCard
+              key={a.id}
+              anniversary={a}
+              onClick={() => selectMode ? toggleSelect(a.id) : setSelectedAnniversary(a)}
+              selected={selectedIds.has(a.id)}
+              selectMode={selectMode}
+            />
           ))}
         </div>
       )}
@@ -73,30 +136,47 @@ export function AnniversariesPage() {
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} title="添加纪念日">
         <AnniversaryForm onClose={() => setShowForm(false)} onCreated={() => { setShowForm(false); loadData() }} />
       </Modal>
+
+      <Modal isOpen={!!selectedAnniversary} onClose={() => setSelectedAnniversary(null)} title={selectedAnniversary?.title}>
+        {selectedAnniversary && (
+          <div className="text-center">
+            <div className="text-5xl mb-4">💝</div>
+            <p className="text-3xl font-bold text-cloud-800 mb-2" style={{ fontFamily: "'Quicksand', sans-serif" }}>
+              {countdownDays(selectedAnniversary.date, selectedAnniversary.recurring).label}
+            </p>
+            <p className="text-sm text-cloud-400 mb-1">{formatDate(selectedAnniversary.date)}</p>
+            <p className="text-sm text-cloud-400 mb-6">{selectedAnniversary.recurring ? '每年重复' : '仅一次'}</p>
+            <button
+              onClick={() => handleDetailDelete(selectedAnniversary)}
+              className="text-sm text-red-400 hover:text-red-500 transition-colors"
+            >
+              删除
+            </button>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
 
-function AnniversaryCard({ anniversary, onDeleted }: { anniversary: Anniversary; onDeleted: () => void }) {
+function AnniversaryCard({ anniversary, onClick, selected, selectMode }: { anniversary: Anniversary; onClick: () => void; selected: boolean; selectMode: boolean }) {
   const { label, isToday } = countdownDays(anniversary.date, anniversary.recurring)
 
-  async function handleDelete() {
-    if (!confirm(`确定删除纪念日「${anniversary.title}」吗？`)) return
-    await supabase.from('anniversaries').delete().eq('id', anniversary.id)
-    onDeleted()
-  }
-
   return (
-    <div className="relative group">
+    <div className="relative group cursor-pointer" onClick={onClick}>
       <Card className={isToday ? 'bg-gradient-to-r from-sakura-50 to-peach-50 border-sakura-200 shadow-sakura-100/30 animate-[sparkle_3s_ease-in-out_infinite]' : ''}>
         <div className="text-center">
+          {selectMode && (
+            <div className={`mx-auto mb-2 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all ${selected ? 'bg-sakura-500 shadow-sm' : 'bg-white/70 border-2 border-cloud-200'}`}>
+              {selected ? '✓' : ''}
+            </div>
+          )}
           <p className="text-sm text-cloud-500 mb-1">{anniversary.title}</p>
           <p className={`text-3xl font-bold ${isToday ? 'text-sakura-600' : 'text-cloud-800'}`} style={{ fontFamily: "'Quicksand', sans-serif" }}>
             {isToday ? '🎉 ' : ''}{label}
           </p>
           <p className="text-xs text-cloud-400 mt-2">{formatDate(anniversary.date)}</p>
           <p className="text-xs text-cloud-400">{anniversary.recurring ? '每年重复' : '仅一次'}</p>
-          <button onClick={handleDelete} className="mt-3 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto">删除</button>
         </div>
       </Card>
     </div>
