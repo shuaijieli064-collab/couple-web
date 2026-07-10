@@ -25,7 +25,7 @@ export function NotificationBell() {
     <div ref={bellRef} className="relative" data-notification-bell>
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-xl text-cloud-400 hover:text-sakura-500 hover:bg-sakura-50 transition-all duration-200"
+        className="relative p-2.5 rounded-2xl bg-white shadow-lg shadow-sakura-200/30 border border-sakura-100/50 text-cloud-400 hover:text-sakura-500 hover:bg-sakura-50 transition-all duration-200"
       >
         <span className="text-xl">🔔</span>
         {unreadCount > 0 && (
