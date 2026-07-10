@@ -3,27 +3,15 @@ import { NotificationItem } from './NotificationItem'
 
 interface Props {
   onClose: () => void
-  placement?: 'desktop' | 'mobile'
 }
 
-export function NotificationPanel({ onClose, placement = 'desktop' }: Props) {
+export function NotificationPanel({ onClose }: Props) {
   const { notifications, loading, markAllAsRead, unreadCount } = useNotifications()
-
-  const isMobile = placement === 'mobile'
 
   return (
     <div
       data-notification-panel
-      className={`fixed w-80 sm:w-96 bg-white rounded-2xl shadow-xl shadow-sakura-200/30 border border-sakura-100/50 overflow-hidden z-50 ${
-        isMobile ? '' : 'animate-[slideInRight_0.2s_ease-out]'
-      }`}
-      style={{
-        top: isMobile
-          ? 'calc(64px + env(safe-area-inset-top, 0))'
-          : 'calc(12px + env(safe-area-inset-top, 0))',
-        right: isMobile ? '1rem' : 'auto',
-        left: isMobile ? 'auto' : 'calc(16rem + 12px)',
-      }}
+      className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl shadow-sakura-200/30 border border-sakura-100/50 overflow-hidden z-50 animate-[slideInRight_0.2s_ease-out]"
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-sakura-100/50 bg-gradient-to-r from-sakura-50/50 to-transparent">
         <div className="flex items-center gap-2">

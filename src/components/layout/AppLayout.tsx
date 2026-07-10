@@ -3,7 +3,6 @@ import { InstallPrompt } from '../common/InstallPrompt'
 import { Sidebar } from './Sidebar'
 import { BottomTab } from './BottomTab'
 import { ToastContainer } from '../notifications/Toast'
-import { NotificationBell } from '../notifications/NotificationBell'
 
 interface AppLayoutProps {
   children: ReactNode
@@ -21,9 +20,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           {children}
         </div>
       </main>
-      <div className="md:hidden fixed top-4 right-4 z-50" style={{ top: 'calc(4px + env(safe-area-inset-top, 0))' }}>
-        <NotificationBell placement="mobile" />
-      </div>
       <BottomTab />
       <InstallPrompt />
       <ToastContainer />
