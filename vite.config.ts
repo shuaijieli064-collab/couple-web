@@ -10,7 +10,17 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon-32x32.png', 'apple-touch-icon.png', 'app-icon.svg'],
+      devOptions: {
+        enabled: true,
+        type: 'module',
+      },
+      includeAssets: [
+        'favicon.svg',
+        'favicon-32x32.png',
+        'apple-touch-icon.png',
+        'app-icon.svg',
+        'icons.svg',
+      ],
       manifest: {
         name: '我们的时光',
         short_name: '我们的时光',
@@ -18,24 +28,72 @@ export default defineConfig({
         theme_color: '#f55082',
         background_color: '#fff5f7',
         display: 'standalone',
+        display_override: ['standalone', 'fullscreen'],
         orientation: 'portrait-primary',
         scope: '/',
         start_url: '/',
         lang: 'zh-CN',
-        categories: ['lifestyle', 'social'],
+        dir: 'ltr',
+        categories: ['lifestyle', 'social', 'productivity'],
+        screenshots: [
+          {
+            src: 'screenshot-1.png',
+            sizes: '390x844',
+            type: 'image/png',
+            label: '主页面截图',
+          },
+        ],
         icons: [
+          {
+            src: 'pwa-72x72.png',
+            sizes: '72x72',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'pwa-96x96.png',
+            sizes: '96x96',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'pwa-128x128.png',
+            sizes: '128x128',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'pwa-144x144.png',
+            sizes: '144x144',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'pwa-152x152.png',
+            sizes: '152x152',
+            type: 'image/png',
+            purpose: 'any',
+          },
           {
             src: 'pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'pwa-384x384.png',
+            sizes: '384x384',
+            type: 'image/png',
+            purpose: 'any',
           },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any',
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'pwa-512x512-maskable.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
@@ -44,7 +102,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        navigateFallback: 'index.html',
+        navigateFallback: '/',
+        navigateFallbackDenylist: [/^\/api/, /^\/_/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/.*/i,
@@ -54,6 +113,9 @@ export default defineConfig({
               expiration: {
                 maxEntries: 120,
                 maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
               },
             },
           },
@@ -67,10 +129,27 @@ export default defineConfig({
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 5,
               },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'google-fonts',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
             },
           },
         ],
+        skipWaiting: true,
+        clientsClaim: true,
       },
+      strategies: 'injectManifest',
     }),
   ],
 })
