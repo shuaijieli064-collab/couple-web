@@ -328,9 +328,11 @@ function CommentsSection({ diaryId }: { diaryId: string }) {
   const [loading, setLoading] = useState(false)
   const [newContent, setNewContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
     if (!diaryId) return
+    setErrorMsg('')
     loadComments()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diaryId])
@@ -363,24 +365,25 @@ function CommentsSection({ diaryId }: { diaryId: string }) {
 
   async function handleDelete(commentId: string) {
     if (!confirm('确定删除这条评论吗？')) return
-    await supabase.from('diary_comments').delete().eq('id', commentId)
+    const { error } = await supabase.from('diary_comments').delete().eq('id', commentId)
+    if (error) return
     setComments((prev) => prev.filter((c) => c.id !== commentId))
   }
 
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault()
     if (!user || !newContent.trim()) return
+    setErrorMsg('')
     setSubmitting(true)
-    try {
-      await supabase.from('diary_comments').insert({ diary_id: diaryId, user_id: user.id, content: newContent.trim() })
-      setNewContent('')
-      // reload comments
-      await loadComments()
-    } catch (e) {
-      console.error('Failed to post comment', e)
-    } finally {
+    const { error } = await supabase.from('diary_comments').insert({ diary_id: diaryId, user_id: user.id, content: newContent.trim() })
+    if (error) {
+      setErrorMsg(error.message === 'relation "diary_comments" does not exist' ? '评论功能尚未配置，请在 Supabase 中执行建表 SQL' : error.message)
       setSubmitting(false)
+      return
     }
+    setNewContent('')
+    await loadComments()
+    setSubmitting(false)
   }
 
   return (
@@ -416,6 +419,8 @@ function CommentsSection({ diaryId }: { diaryId: string }) {
           ))}
         </div>
       )}
+
+      {errorMsg && <div className="mt-3 text-xs text-red-400">{errorMsg}</div>}
 
       <form onSubmit={handleSubmit} className="mt-4">
         {user ? (
