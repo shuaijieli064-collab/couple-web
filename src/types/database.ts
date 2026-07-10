@@ -40,6 +40,15 @@ export interface DiaryEntry {
   updated_at: string
 }
 
+export interface DiaryComment {
+  id: string
+  diary_id: string
+  user_id: string
+  content: string
+  created_at: string
+  author?: Profile
+}
+
 export interface Anniversary {
   id: string
   user_id: string

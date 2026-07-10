@@ -5,7 +5,7 @@ import { Card } from '../common/Card'
 import { EmptyState } from '../common/EmptyState'
 import { Modal } from '../common/Modal'
 import { Avatar } from '../common/Avatar'
-import { type DiaryEntry, type Profile } from '../../types/database'
+import { type DiaryEntry, type DiaryComment, type Profile } from '../../types/database'
 import { formatDate } from '../../utils/dateUtils'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -324,7 +324,7 @@ function DiaryEditor({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
 // Comments UI
 function CommentsSection({ diaryId }: { diaryId: string }) {
   const { user } = useAuth()
-  const [comments, setComments] = useState<({ id: string; diary_id: string; user_id: string; content: string; created_at: string } & { author?: Profile })[]>([])
+  const [comments, setComments] = useState<DiaryComment[]>([])
   const [loading, setLoading] = useState(false)
   const [newContent, setNewContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -345,7 +345,7 @@ function CommentsSection({ diaryId }: { diaryId: string }) {
         .order('created_at', { ascending: true })
 
       if (data) {
-        const items = data as { id: string; diary_id: string; user_id: string; content: string; created_at: string }[]
+        const items = data as DiaryComment[]
         const userIds = Array.from(new Set(items.map((c) => c.user_id)))
         let profilesById: Record<string, Profile | undefined> = {}
         if (userIds.length > 0) {
@@ -359,6 +359,12 @@ function CommentsSection({ diaryId }: { diaryId: string }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleDelete(commentId: string) {
+    if (!confirm('确定删除这条评论吗？')) return
+    await supabase.from('diary_comments').delete().eq('id', commentId)
+    setComments((prev) => prev.filter((c) => c.id !== commentId))
   }
 
   async function handleSubmit(e?: React.FormEvent) {
@@ -388,13 +394,21 @@ function CommentsSection({ diaryId }: { diaryId: string }) {
       ) : (
         <div className="space-y-3">
           {comments.map((c) => (
-            <div key={c.id} className="flex items-start gap-3">
+            <div key={c.id} className="flex items-start gap-3 group">
               <Avatar url={c.author?.avatar_url} name={c.author?.display_name ?? '他们'} size="sm" />
               <div className="flex-1">
                 <div className="flex items-center gap-2 text-xs text-cloud-400 mb-1">
                   <span className="font-medium text-cloud-800">{c.author?.display_name ?? '匿名'}</span>
                   <span>·</span>
                   <span>{new Date(c.created_at).toLocaleString()}</span>
+                  {user && user.id === c.user_id && (
+                    <button
+                      onClick={() => handleDelete(c.id)}
+                      className="ml-auto text-cloud-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      删除
+                    </button>
+                  )}
                 </div>
                 <div className="text-sm text-cloud-600">{c.content}</div>
               </div>

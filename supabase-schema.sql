@@ -101,6 +101,31 @@ create policy "用户可管理自己的日记" on diary_entries for all using (a
 create index idx_diary_date on diary_entries(date desc);
 
 -- ============================================
+-- Diary Comments (日记评论)
+-- ============================================
+create table diary_comments (
+  id uuid primary key default uuid_generate_v4(),
+  diary_id uuid references diary_entries(id) on delete cascade not null,
+  user_id uuid references profiles(id) on delete cascade not null,
+  content text not null,
+  created_at timestamptz default now()
+);
+
+alter table diary_comments enable row level security;
+
+create policy "已认证用户可查看评论"
+  on diary_comments for select using (auth.role() = 'authenticated');
+
+create policy "已认证用户可创建评论"
+  on diary_comments for insert with check (auth.role() = 'authenticated');
+
+create policy "用户可删除自己的评论"
+  on diary_comments for delete using (auth.uid() = user_id);
+
+create index idx_diary_comments_diary_id on diary_comments(diary_id);
+create index idx_diary_comments_created_at on diary_comments(created_at asc);
+
+-- ============================================
 -- Anniversaries (纪念日)
 -- ============================================
 create table anniversaries (
