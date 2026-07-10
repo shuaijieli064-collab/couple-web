@@ -2,7 +2,11 @@ import { useState, useRef, useEffect } from 'react'
 import { useNotifications } from '../../contexts/NotificationContext'
 import { NotificationPanel } from './NotificationPanel'
 
-export function NotificationBell() {
+interface NotificationBellProps {
+  placement?: 'desktop' | 'mobile'
+}
+
+export function NotificationBell({ placement = 'desktop' }: NotificationBellProps) {
   const { unreadCount } = useNotifications()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -31,7 +35,7 @@ export function NotificationBell() {
         )}
       </button>
       {open && (
-        <NotificationPanel onClose={() => setOpen(false)} />
+        <NotificationPanel onClose={() => setOpen(false)} placement={placement} />
       )}
     </div>
   )

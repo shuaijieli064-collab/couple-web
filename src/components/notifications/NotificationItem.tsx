@@ -43,7 +43,7 @@ export function NotificationItem({ notification }: { notification: Notification 
         )}
         <p className="text-[10px] text-cloud-300 mt-1">{timeAgo}</p>
       </div>
-      <div className="flex items-center gap-1 flex-shrink-0">
+      <div className="flex items-center gap-2 flex-shrink-0">
         {isUnread && (
           <div className="w-2 h-2 rounded-full bg-sakura-500" />
         )}
@@ -52,7 +52,8 @@ export function NotificationItem({ notification }: { notification: Notification 
             e.stopPropagation()
             deleteNotification(notification.id)
           }}
-          className="text-cloud-300 hover:text-red-400 text-xs opacity-0 hover:opacity-100 hover:bg-red-50 rounded p-1 transition-all"
+          className="text-cloud-300 hover:text-red-500 hover:bg-red-50 text-xs p-1.5 rounded-lg transition-all"
+          title="删除通知"
         >
           ✕
         </button>
