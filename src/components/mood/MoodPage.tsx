@@ -7,7 +7,6 @@ import { Avatar } from '../common/Avatar'
 import { type MoodBubble, type Profile } from '../../types/database'
 import { formatRelative } from '../../utils/dateUtils'
 
-// 心情类型配置：图标、标签、渐变背景、文字颜色
 const MOOD_TYPES: Record<string, { label: string; icon: string; gradient: string; textColor: string }> = {
   happy: { label: '开心', icon: '😊', gradient: 'from-peach-200 to-peach-300', textColor: 'text-peach-700' },
   miss: { label: '想念', icon: '🥺', gradient: 'from-sakura-200 to-sakura-300', textColor: 'text-sakura-700' },
@@ -18,7 +17,7 @@ const MOOD_TYPES: Record<string, { label: string; icon: string; gradient: string
   angry: { label: '生气', icon: '😤', gradient: 'from-rose-300 to-red-300', textColor: 'text-rose-700' },
 }
 
-export function MoodTab() {
+export function MoodPage() {
   const { user, profile } = useAuth()
   const [partner, setPartner] = useState<Profile | null>(null)
   const [moods, setMoods] = useState<MoodBubble[]>([])
@@ -38,7 +37,6 @@ export function MoodTab() {
         .limit(1)
       if (profiles && profiles.length > 0) setPartner(profiles[0] as Profile)
 
-      // 查询最近的心情气泡（每位用户最新一条）
       const { data: moodData } = await supabase
         .from('mood_bubbles')
         .select('*')
@@ -90,7 +88,6 @@ export function MoodTab() {
     loadData()
   }
 
-  // 取双方最新心情
   const myLatestMood = moods.find((m) => m.user_id === user?.id)
   const partnerLatestMood = moods.find((m) => m.user_id === partner?.id)
 
@@ -100,7 +97,12 @@ export function MoodTab() {
 
   return (
     <div className="space-y-6">
-      {/* 心情气泡展示区 */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h1 className="text-xl md:text-2xl font-bold text-cloud-800" style={{ fontFamily: "'Quicksand', sans-serif" }}>
+          心情 💭
+        </h1>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {myLatestMood ? (
           <MoodBubbleCard
@@ -134,7 +136,6 @@ export function MoodTab() {
         )}
       </div>
 
-      {/* 选择心情 */}
       <Card>
         <h3 className="text-sm font-medium text-cloud-700 mb-3">现在的心情是？</h3>
         <div className="grid grid-cols-4 gap-2 mb-4">
@@ -173,7 +174,6 @@ export function MoodTab() {
         )}
       </Card>
 
-      {/* 心情历史 */}
       <div>
         <h3 className="text-lg font-semibold text-cloud-700 mb-3">心情记录</h3>
         {moods.length === 0 ? (

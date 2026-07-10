@@ -6,7 +6,7 @@ import { EmptyState } from '../common/EmptyState'
 import { Avatar } from '../common/Avatar'
 import { type CheckIn, type Profile } from '../../types/database'
 
-export function CheckInTab() {
+export function CheckInPage() {
   const { user } = useAuth()
   const [partner, setPartner] = useState<Profile | null>(null)
   const [checkins, setCheckins] = useState<CheckIn[]>([])
@@ -20,7 +20,6 @@ export function CheckInTab() {
     if (!user) return
     setLoading(true)
     try {
-      // 查询对方信息
       const { data: profiles } = await supabase
         .from('profiles')
         .select('*')
@@ -28,7 +27,6 @@ export function CheckInTab() {
         .limit(1)
       if (profiles && profiles.length > 0) setPartner(profiles[0] as Profile)
 
-      // 查询最近7天双方打卡记录
       const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
       const { data: checkinData } = await supabase
         .from('checkins')
@@ -48,7 +46,6 @@ export function CheckInTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
-  // 今日打卡状态
   const myMorningToday = checkins.find(
     (c) => c.user_id === user?.id && c.checkin_type === 'morning' && c.checkin_date === todayStr
   )
@@ -89,7 +86,6 @@ export function CheckInTab() {
     }
   }
 
-  // 生成最近7天日期列表（从6天前到今天）
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(Date.now() - (6 - i) * 86400000)
     return {
@@ -106,7 +102,12 @@ export function CheckInTab() {
 
   return (
     <div className="space-y-6">
-      {/* 打卡按钮区 */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h1 className="text-xl md:text-2xl font-bold text-cloud-800" style={{ fontFamily: "'Quicksand', sans-serif" }}>
+          打卡 🌅
+        </h1>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <CheckInButton
           type="morning"
@@ -124,7 +125,6 @@ export function CheckInTab() {
         />
       </div>
 
-      {/* 留言输入 */}
       {(!myMorningToday || !myNightToday) && (
         <Card>
           <label className="block text-sm font-medium text-cloud-700 mb-2">附一句留言（可选）</label>
@@ -137,7 +137,6 @@ export function CheckInTab() {
         </Card>
       )}
 
-      {/* 对方今日打卡状态 */}
       {partner && (
         <Card>
           <div className="flex items-center gap-2 mb-3">
@@ -151,7 +150,6 @@ export function CheckInTab() {
         </Card>
       )}
 
-      {/* 7天打卡热力图 */}
       <div>
         <h3 className="text-lg font-semibold text-cloud-700 mb-3">最近 7 天</h3>
         {checkins.length === 0 ? (
@@ -193,7 +191,6 @@ export function CheckInTab() {
                 )
               })}
             </div>
-            {/* 图例 */}
             <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
               <LegendDot color="bg-sakura-400" label="我的早安" />
               <LegendDot color="bg-peach-400" label="我的晚安" />

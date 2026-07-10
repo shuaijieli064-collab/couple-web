@@ -7,7 +7,6 @@ import { Modal } from '../common/Modal'
 import { type WishItem } from '../../types/database'
 import { formatDate } from '../../utils/dateUtils'
 
-// 分类配置
 const CATEGORIES: Record<string, { label: string; icon: string; color: string }> = {
   travel: { label: '旅行', icon: '✈️', color: 'bg-sakura-100 text-sakura-700' },
   food: { label: '美食', icon: '🍽️', color: 'bg-peach-100 text-peach-700' },
@@ -16,17 +15,15 @@ const CATEGORIES: Record<string, { label: string; icon: string; color: string }>
   other: { label: '其他', icon: '💡', color: 'bg-cloud-100 text-cloud-600' },
 }
 
-// 状态配置
 const STATUS_CONFIG: Record<string, { label: string; color: string; order: number }> = {
   pending: { label: '待完成', color: 'text-cloud-500', order: 0 },
   in_progress: { label: '进行中', color: 'text-peach-600', order: 1 },
   completed: { label: '已完成', color: 'text-sakura-600', order: 2 },
 }
 
-// 状态循环顺序
 const STATUS_CYCLE = ['pending', 'in_progress', 'completed']
 
-export function WishListTab() {
+export function WishListPage() {
   const { user } = useAuth()
   const [wishes, setWishes] = useState<WishItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -81,7 +78,6 @@ export function WishListTab() {
     loadData()
   }
 
-  // 按状态分组
   const grouped = {
     pending: wishes.filter((w) => w.status === 'pending'),
     in_progress: wishes.filter((w) => w.status === 'in_progress'),
@@ -94,8 +90,10 @@ export function WishListTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-cloud-400">一起攒愿望，一起实现它</p>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h1 className="text-xl md:text-2xl font-bold text-cloud-800" style={{ fontFamily: "'Quicksand', sans-serif" }}>
+          愿望 🌟
+        </h1>
         <button
           onClick={() => setShowForm(true)}
           className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 rounded-xl transition-all shadow-sm"
@@ -103,6 +101,8 @@ export function WishListTab() {
           添加愿望
         </button>
       </div>
+
+      <p className="text-sm text-cloud-400">一起攒愿望，一起实现它</p>
 
       {wishes.length === 0 ? (
         <EmptyState icon="🌟" title="愿望清单是空的" description="添加你们想一起完成的事吧" />

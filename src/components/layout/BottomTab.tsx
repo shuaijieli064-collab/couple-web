@@ -2,11 +2,13 @@ import { NavLink } from 'react-router-dom'
 
 const navItems = [
   { path: '/', label: '首页', icon: '🏠' },
-  { path: '/photos', label: '照片', icon: '📷' },
+  { path: '/calendar', label: '日历', icon: '📅' },
+  { path: '/checkin', label: '打卡', icon: '☀️' },
   { path: '/diary', label: '日记', icon: '📝' },
-  { path: '/anniversaries', label: '纪念日', icon: '💝' },
+  { path: '/mood', label: '心情', icon: '💭' },
+  { path: '/wishes', label: '愿望', icon: '🌟' },
+  { path: '/photos', label: '照片', icon: '📷' },
   { path: '/games', label: '游戏', icon: '🎮' },
-  { path: '/distance', label: '异地', icon: '💞' },
   { path: '/settings', label: '设置', icon: '⚙️' },
 ]
 

@@ -7,7 +7,9 @@ import { PhotosPage } from './components/photos/PhotosPage'
 import { DiaryPage } from './components/diary/DiaryPage'
 import { AnniversariesPage } from './components/anniversaries/AnniversariesPage'
 import { GamesPage } from './components/games/GamesPage'
-import { DistancePage } from './components/distance/DistancePage'
+import { CheckInPage } from './components/checkin/CheckInPage'
+import { MoodPage } from './components/mood/MoodPage'
+import { WishListPage } from './components/wishes/WishListPage'
 import { SettingsPage } from './components/settings/SettingsPage'
 
 function AppRoutes() {
@@ -31,9 +33,11 @@ function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="/photos" element={<PhotosPage />} />
         <Route path="/diary" element={<DiaryPage />} />
-        <Route path="/anniversaries" element={<AnniversariesPage />} />
+        <Route path="/calendar" element={<AnniversariesPage />} />
         <Route path="/games" element={<GamesPage />} />
-        <Route path="/distance" element={<DistancePage />} />
+        <Route path="/checkin" element={<CheckInPage />} />
+        <Route path="/mood" element={<MoodPage />} />
+        <Route path="/wishes" element={<WishListPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

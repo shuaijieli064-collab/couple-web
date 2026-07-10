@@ -103,15 +103,13 @@ export interface QuizAnswer {
   created_at: string
 }
 
-// ============ 异地恋功能类型 ============
-
 /** 共享日历事件 */
 export interface CalendarEvent {
   id: string
   title: string
   description: string | null
   event_date: string
-  event_type: string // 'meetup' | 'birthday' | 'anniversary' | 'holiday' | 'other'
+  event_type: string
   created_by: string
   created_at: string
 }
@@ -120,7 +118,7 @@ export interface CalendarEvent {
 export interface CheckIn {
   id: string
   user_id: string
-  checkin_type: string // 'morning' | 'night'
+  checkin_type: string
   checkin_date: string
   checkin_time: string
   message: string | null
@@ -131,7 +129,7 @@ export interface CheckIn {
 export interface MoodBubble {
   id: string
   user_id: string
-  mood: string // 'happy' | 'miss' | 'love' | 'sad' | 'tired' | 'excited' | 'angry'
+  mood: string
   message: string | null
   created_at: string
   expires_at: string | null
@@ -142,8 +140,8 @@ export interface WishItem {
   id: string
   title: string
   description: string | null
-  category: string // 'travel' | 'food' | 'activity' | 'gift' | 'other'
-  status: string // 'pending' | 'in_progress' | 'completed'
+  category: string
+  status: string
   created_by: string
   completed_at: string | null
   created_at: string
@@ -162,29 +160,23 @@ export interface LoveLetter {
   created_at: string
 }
 
-/** 异地小游戏 - 你画我猜 */
+/** 你画我猜 */
 export interface DrawGuessRound {
   id: string
   word: string
   drawer_id: string
-  guesser_id: string | null
-  image_url: string | null
+  drawing_data: string | null
   guess: string | null
-  correct: boolean | null
-  status: string // 'drawing' | 'guessing' | 'completed'
+  guessed: boolean
+  guessed_correctly: boolean
   created_at: string
-  completed_at: string | null
 }
 
-/** 异地小游戏 - 真心话大冒险 */
+/** 真心话大冒险 */
 export interface TruthDareRound {
   id: string
-  type: string // 'truth' | 'dare'
+  type: string
   content: string
-  created_by: string
-  target_user: string
-  response: string | null
-  status: string // 'pending' | 'answered' | 'skipped'
+  challenger: string
   created_at: string
-  responded_at: string | null
 }
