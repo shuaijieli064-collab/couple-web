@@ -23,7 +23,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
         </main>
       </div>
-      <div className="hidden md:flex fixed top-4 right-4 z-[9999]">
+      <div className="fixed right-4 z-[9999]" style={{ top: 'calc(1rem + env(safe-area-inset-top, 0))' }}>
         <NotificationBell />
       </div>
       <BottomTab />

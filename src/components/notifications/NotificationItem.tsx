@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { useNotifications } from '../../contexts/NotificationContext'
@@ -16,15 +17,24 @@ const typeIcons: Record<string, string> = {
 export function NotificationItem({ notification }: { notification: Notification }) {
   const { markAsRead, deleteNotification } = useNotifications()
   const isUnread = !notification.read_at
+  const [deleting, setDeleting] = useState(false)
 
   const timeAgo = formatDistanceToNow(new Date(notification.created_at), {
     addSuffix: true,
     locale: zhCN,
   })
 
+  async function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation()
+    setDeleting(true)
+    await deleteNotification(notification.id)
+  }
+
   return (
     <div
-      className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors ${
+      className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-all duration-200 ${
+        deleting ? 'opacity-0 -translate-x-full' : 'opacity-100 translate-x-0'
+      } ${
         isUnread
           ? 'bg-sakura-50/50'
           : 'hover:bg-cloud-50/50'
@@ -45,13 +55,10 @@ export function NotificationItem({ notification }: { notification: Notification 
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         {isUnread && (
-          <div className="w-2 h-2 rounded-full bg-sakura-500" />
+          <div className="w-2 h-2 rounded-full bg-sakura-500 animate-pulse" />
         )}
         <button
-          onClick={(e) => {
-            e.stopPropagation()
-            deleteNotification(notification.id)
-          }}
+          onClick={handleDelete}
           className="text-cloud-300 hover:text-red-500 hover:bg-red-50 text-xs p-1.5 rounded-lg transition-all"
           title="删除通知"
         >

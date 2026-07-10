@@ -1,5 +1,4 @@
 import { NavLink } from 'react-router-dom'
-import { NotificationBell } from '../notifications/NotificationBell'
 
 const navItems = [
   { path: '/', label: '首页', icon: '🏠' },
@@ -34,9 +33,6 @@ export function BottomTab() {
             </NavLink>
           </li>
         ))}
-        <li className="flex-1 min-w-[3.5rem]">
-          <NotificationBell />
-        </li>
       </ul>
     </nav>
   )

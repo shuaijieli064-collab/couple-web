@@ -110,10 +110,10 @@ export default defineConfig({
             urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'supabase-images-v2',
+              cacheName: 'supabase-images-v3',
               expiration: {
-                maxEntries: 120,
-                maxAgeSeconds: 60 * 60 * 24 * 30,
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 60,
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -124,11 +124,11 @@ export default defineConfig({
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-api-v2',
+              cacheName: 'supabase-api-v3',
               networkTimeoutSeconds: 10,
               expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 5,
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 30,
               },
               cacheableResponse: {
                 statuses: [0, 200],
@@ -139,10 +139,24 @@ export default defineConfig({
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'google-fonts',
+              cacheName: 'google-fonts-stylesheets',
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
               },
             },
           },

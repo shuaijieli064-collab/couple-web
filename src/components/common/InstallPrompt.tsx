@@ -150,7 +150,12 @@ export function InstallPrompt() {
 
   async function refreshApp() {
     setRefreshing(true)
-    updateServiceWorker()
+    try {
+      await updateServiceWorker(true)
+    } catch (e) {
+      console.error('Failed to update service worker:', e)
+      window.location.reload()
+    }
   }
 
   if (!visible && !showRefresh) return null

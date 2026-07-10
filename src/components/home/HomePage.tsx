@@ -18,39 +18,6 @@ export function HomePage() {
   const [recentDiary, setRecentDiary] = useState<{ id: string; title: string; content: string; date: string; user_name: string } | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  // Presence channel
-  useEffect(() => {
-    if (!user) return
-
-    const channel = supabase.channel('presence', {
-      config: { presence: { key: user.id } },
-    })
-
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState()
-        const onlineUsers = Object.keys(state)
-        if (partner && onlineUsers.includes(partner.id)) {
-          setIsPartnerOnline(true)
-        } else {
-          setIsPartnerOnline(false)
-        }
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ online_at: new Date().toISOString() })
-        }
-      })
-
-    return () => {
-      channel.unsubscribe()
-    }
-  }, [user, partner?.id])
-
   async function loadData() {
     if (!user) return
 
@@ -111,6 +78,40 @@ export function HomePage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Presence channel
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase.channel('presence', {
+      config: { presence: { key: user.id } },
+    })
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState()
+        const onlineUsers = Object.keys(state)
+        if (partner && onlineUsers.includes(partner.id)) {
+          setIsPartnerOnline(true)
+        } else {
+          setIsPartnerOnline(false)
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ online_at: new Date().toISOString() })
+        }
+      })
+
+    return () => {
+      channel.unsubscribe()
+    }
+  }, [user, partner?.id])
 
   if (loading) {
     return (

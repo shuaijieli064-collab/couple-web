@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useNotifications } from '../../contexts/NotificationContext'
 import { NotificationItem } from './NotificationItem'
 
@@ -7,11 +8,29 @@ interface Props {
 
 export function NotificationPanel({ onClose }: Props) {
   const { notifications, loading, markAllAsRead, unreadCount } = useNotifications()
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   return (
     <div
       data-notification-panel
-      className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl shadow-sakura-200/30 border border-sakura-100/50 overflow-hidden z-50 animate-[slideInRight_0.2s_ease-out]"
+      className="fixed bg-white rounded-2xl shadow-xl shadow-sakura-200/30 border border-sakura-100/50 overflow-hidden z-[9999]"
+      style={{
+        top: isMobile
+          ? 'calc(64px + env(safe-area-inset-top, 0))'
+          : 'calc(12px + env(safe-area-inset-top, 0))',
+        right: isMobile ? '1rem' : 'auto',
+        left: isMobile ? '1rem' : 'calc(16rem + 12px)',
+        width: isMobile ? 'auto' : '24rem',
+        maxWidth: isMobile ? 'none' : '24rem',
+        animation: 'slideInRight 0.2s ease-out',
+      }}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-sakura-100/50 bg-gradient-to-r from-sakura-50/50 to-transparent">
         <div className="flex items-center gap-2">
