@@ -1,7 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { Avatar } from '../common/Avatar'
-import { NotificationBell } from '../notifications/NotificationBell'
 
 const navItems = [
   { path: '/', label: '首页', icon: '🏠' },
@@ -21,12 +20,9 @@ export function Sidebar({ className = '' }: { className?: string }) {
   return (
     <aside className={`w-64 bg-white border-r border-sakura-100/50 flex flex-col ${className}`}>
       <div className="p-6 border-b border-sakura-100/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="text-2xl animate-[pulse-slow_3s_ease-in-out_infinite]">💕</div>
-            <h1 className="text-lg font-bold text-cloud-800">我们的时光</h1>
-          </div>
-          <NotificationBell />
+        <div className="flex items-center gap-3">
+          <div className="text-2xl animate-[pulse-slow_3s_ease-in-out_infinite]">💕</div>
+          <h1 className="text-lg font-bold text-cloud-800">我们的时光</h1>
         </div>
       </div>
 
