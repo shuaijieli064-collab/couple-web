@@ -96,7 +96,7 @@ function AnniversaryCard({ anniversary, onDeleted }: { anniversary: Anniversary;
           </p>
           <p className="text-xs text-cloud-400 mt-2">{formatDate(anniversary.date)}</p>
           <p className="text-xs text-cloud-400">{anniversary.recurring ? '每年重复' : '仅一次'}</p>
-          <button onClick={handleDelete} className="mt-3 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">删除</button>
+          <button onClick={handleDelete} className="mt-3 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto">删除</button>
         </div>
       </Card>
     </div>

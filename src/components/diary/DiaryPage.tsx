@@ -167,7 +167,7 @@ function DiaryTimeline({ entries, onSelect, onDeleted }: { entries: (DiaryEntry 
           </Card>
           <button
             onClick={(e) => handleDelete(e, entry.id)}
-            className="absolute top-2 right-2 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+            className="absolute top-2 right-2 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
           >
             删除
           </button>
@@ -407,7 +407,7 @@ function CommentsSection({ diaryId }: { diaryId: string }) {
                   {user && user.id === c.user_id && (
                     <button
                       onClick={() => handleDelete(c.id)}
-                      className="ml-auto text-cloud-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                      className="ml-auto text-cloud-300 hover:text-red-400 transition-colors opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
                     >
                       删除
                     </button>

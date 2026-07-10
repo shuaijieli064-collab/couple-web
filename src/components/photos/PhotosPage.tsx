@@ -167,7 +167,7 @@ export function PhotosPage() {
                 </Card>
                 <button
                   onClick={() => deletePhoto(photo)}
-                  className="absolute top-2 right-2 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                  className="absolute top-2 right-2 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
                 >
                   删除
                 </button>
@@ -268,7 +268,7 @@ export function PhotosPage() {
                     </Card>
                     <button
                       onClick={() => deleteAlbum(album)}
-                      className="absolute top-2 right-2 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                      className="absolute top-2 right-2 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
                     >
                       删除
                     </button>
@@ -314,7 +314,7 @@ export function PhotosPage() {
                       {!selectMode && (
                         <button
                           onClick={() => deletePhoto(photo)}
-                          className="absolute top-2 right-2 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                          className="absolute top-2 right-2 text-xs text-cloud-300 hover:text-red-400 transition-colors opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
                         >
                           删除
                         </button>
