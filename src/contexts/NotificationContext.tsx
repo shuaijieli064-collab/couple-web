@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react'
-import { supabase } from '../lib/supabase'
+import { type SupabaseClient } from '@supabase/supabase-js'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { useAuth } from './AuthContext'
 import type { Notification } from '../types/database'
 
@@ -25,11 +26,12 @@ export function useNotifications() {
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
+  const userId = user?.id
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [toasts, setToasts] = useState<Notification[]>([])
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const channelRef = useRef<ReturnType<NonNullable<SupabaseClient>['channel']> | null>(null)
 
   const unreadCount = useMemo(
     () => notifications.filter(n => !n.read_at).length,
@@ -37,7 +39,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   )
 
   useEffect(() => {
-    if (!user) {
+    const timers = timersRef.current
+
+    if (!userId) {
+      setLoading(false)
+      return
+    }
+
+    if (!isSupabaseConfigured) {
       setLoading(false)
       return
     }
@@ -49,7 +58,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase
           .from('notifications')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false })
           .limit(50)
 
@@ -72,14 +81,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
 
     const channel = supabase
-      .channel(`notifications-${user.id}`)
+      .channel(`notifications-${userId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         (payload) => {
           if (cancelled) return
@@ -102,7 +111,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           event: 'UPDATE',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         (payload) => {
           if (cancelled) return
@@ -120,10 +129,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       cancelled = true
       channel.unsubscribe()
       channelRef.current = null
-      timersRef.current.forEach(timer => clearTimeout(timer))
-      timersRef.current.clear()
+      timers.forEach(timer => clearTimeout(timer))
+      timers.clear()
     }
-  }, [user?.id])
+  }, [userId])
 
   const markAsRead = useCallback(async (id: string) => {
     const { error } = await supabase

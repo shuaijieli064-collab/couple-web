@@ -6,7 +6,7 @@ declare module 'canvas-confetti' {
       x?: number
       y?: number
     }
-    [key: string]: any
+    [key: string]: unknown
   }
 
   function confetti(options?: ConfettiOptions): Promise<void>

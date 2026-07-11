@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || ''
 
@@ -23,6 +23,11 @@ export async function requestPushPermission(): Promise<boolean> {
 
 export async function subscribeToPush(userId: string): Promise<boolean> {
   try {
+    if (!isSupabaseConfigured) {
+      console.warn('Supabase not configured, skipping push subscription')
+      return false
+    }
+
     if (!VAPID_PUBLIC_KEY) {
       console.warn('VAPID_PUBLIC_KEY not set, skipping push subscription')
       return false
@@ -64,6 +69,11 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
 
 export async function unsubscribeFromPush(userId: string): Promise<void> {
   try {
+    if (!isSupabaseConfigured) {
+      console.warn('Supabase not configured, skipping push unsubscribe')
+      return
+    }
+
     const registration = await navigator.serviceWorker.ready
     const subscription = await registration.pushManager.getSubscription()
     if (subscription) {

@@ -132,11 +132,6 @@ export function GamesPage() {
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: number; x: number; y: number; emoji: string }[]>([])
   const emojiIdRef = useRef(0)
 
-  useEffect(() => {
-    if (!user) return
-    loadTapCount(user.id)
-  }, [user])
-
   async function loadTapCount(userId: string) {
     try {
       const today = new Date().toISOString().split('T')[0]
@@ -175,7 +170,7 @@ export function GamesPage() {
         console.error('Failed to check existing tap record:', selectError)
         return
       }
-      let error: any
+      let error: unknown
       if (existing && existing.length > 0) {
         const { error: updateError } = await supabase
           .from('tap_records')
@@ -214,6 +209,11 @@ export function GamesPage() {
     if (!user || tapCount < 1) return
     saveTapCount(user.id, tapCount)
   }, [tapCount, user])
+
+  useEffect(() => {
+    if (!user) return
+    loadTapCount(user.id)
+  }, [user])
 
   useEffect(() => {
     if (!user) return

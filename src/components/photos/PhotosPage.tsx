@@ -6,10 +6,11 @@ import { Modal } from '../common/Modal'
 import { type Photo, type Album } from '../../types/database'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
+type AlbumWithCover = Album
 
 export function PhotosPage() {
   const [photos, setPhotos] = useState<Photo[]>([])
-  const [albums, setAlbums] = useState<Album[]>([])
+  const [albums, setAlbums] = useState<AlbumWithCover[]>([])
   const [showUpload, setShowUpload] = useState(false)
   const [showAlbumModal, setShowAlbumModal] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
@@ -42,7 +43,7 @@ export function PhotosPage() {
         setAlbums(albumsRes.data.map(album => {
           const coverPhoto = photosRes.data?.find(p => p.album_id === album.id)
           return { ...album, cover_photo_url: coverPhoto?.url ?? null }
-        }) as Album[])
+        }) as AlbumWithCover[])
       }
     } catch (err) {
       console.error('Failed to load photos:', err)
@@ -355,9 +356,9 @@ export function PhotosPage() {
                 {albums.map((album) => (
                   <div key={album.id} className="relative group">
                     <Card onClick={() => openAlbum(album)} className="cursor-pointer">
-                      {(album as any).cover_photo_url ? (
+                      {album.cover_photo_url ? (
                         <div className="-m-5 mb-3">
-                          <img src={(album as any).cover_photo_url} alt="" className="w-full h-32 object-cover rounded-t-2xl" />
+                          <img src={album.cover_photo_url} alt="" className="w-full h-32 object-cover rounded-t-2xl" />
                         </div>
                       ) : (
                         <div className="-m-5 mb-3 h-32 bg-gradient-to-br from-sakura-200 via-peach-100 to-lilac-100 flex items-center justify-center rounded-t-2xl">

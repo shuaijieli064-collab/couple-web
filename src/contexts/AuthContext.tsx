@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { type Session, type User } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { supabase, SUPABASE_CONFIG_ERROR, isSupabaseConfigured } from '../lib/supabase'
 import { type Profile } from '../types/database'
 
 interface AuthContextType {
@@ -27,8 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [authError, setAuthError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(isSupabaseConfigured)
+  const [authError, setAuthError] = useState<string | null>(isSupabaseConfigured ? null : SUPABASE_CONFIG_ERROR)
 
   async function fetchProfile(userId: string) {
     try {
@@ -48,6 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    if (!isSupabaseConfigured) return
+
     let settled = false
 
     const sessionTimeout = setTimeout(() => {
@@ -95,14 +97,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(sessionTimeout)
       subscription.unsubscribe()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function signOut() {
+    if (!isSupabaseConfigured) {
+      throw new Error(SUPABASE_CONFIG_ERROR)
+    }
     await supabase.auth.signOut()
   }
 
   async function refreshProfile(userId: string) {
+    if (!isSupabaseConfigured) {
+      throw new Error(SUPABASE_CONFIG_ERROR)
+    }
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -123,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   return useContext(AuthContext)
 }

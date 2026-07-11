@@ -5,7 +5,6 @@ const DISMISS_KEY = 'couple-web-pwa-install-dismissed'
 const INSTALL_SHOWN_KEY = 'couple-web-pwa-install-shown'
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null
-let promptCaptured = false
 
 function isStandalone() {
   return (
@@ -35,8 +34,7 @@ function isSafari() {
   return /Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent) && !/Edg/i.test(navigator.userAgent)
 }
 
-if (typeof window !== 'undefined' && !promptCaptured) {
-  promptCaptured = true
+if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e: Event) => {
     e.preventDefault()
     deferredPrompt = e as BeforeInstallPromptEvent

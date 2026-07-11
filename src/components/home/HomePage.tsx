@@ -17,6 +17,7 @@ export function HomePage() {
   const [recentPhotos, setRecentPhotos] = useState<{ id: string; url: string; caption: string | null }[]>([])
   const [recentDiary, setRecentDiary] = useState<{ id: string; title: string; content: string; date: string; user_name: string } | null>(null)
   const [loading, setLoading] = useState(true)
+  const partnerId = partner?.id
 
   async function loadData() {
     if (!user) return
@@ -96,7 +97,7 @@ export function HomePage() {
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState()
         const onlineUsers = Object.keys(state)
-        if (partner && onlineUsers.includes(partner.id)) {
+        if (partnerId && onlineUsers.includes(partnerId)) {
           setIsPartnerOnline(true)
         } else {
           setIsPartnerOnline(false)
@@ -111,7 +112,7 @@ export function HomePage() {
     return () => {
       channel.unsubscribe()
     }
-  }, [user, partner?.id])
+  }, [user, partnerId])
 
   if (loading) {
     return (

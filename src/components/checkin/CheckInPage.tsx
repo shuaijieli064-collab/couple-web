@@ -8,13 +8,13 @@ import { type CheckIn, type Profile } from '../../types/database'
 
 export function CheckInPage() {
   const { user } = useAuth()
+  const today = new Date()
+  const todayStr = today.toISOString().split('T')[0]
   const [partner, setPartner] = useState<Profile | null>(null)
   const [checkins, setCheckins] = useState<CheckIn[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
-
-  const todayStr = new Date().toISOString().split('T')[0]
 
   async function loadData() {
     if (!user) return
@@ -27,7 +27,7 @@ export function CheckInPage() {
         .limit(1)
       if (profiles && profiles.length > 0) setPartner(profiles[0] as Profile)
 
-      const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
+      const sevenDaysAgo = new Date(today.getTime() - 6 * 86400000).toISOString().split('T')[0]
       const { data: checkinData } = await supabase
         .from('checkins')
         .select('*')
@@ -87,7 +87,7 @@ export function CheckInPage() {
   }
 
   const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() - (6 - i) * 86400000)
+    const d = new Date(today.getTime() - (6 - i) * 86400000)
     return {
       dateStr: d.toISOString().split('T')[0],
       weekday: ['日', '一', '二', '三', '四', '五', '六'][d.getDay()],

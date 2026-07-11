@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
+import { supabase, SUPABASE_CONFIG_ERROR, isSupabaseConfigured } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { InstallPrompt } from '../common/InstallPrompt'
 
@@ -21,6 +21,10 @@ export function AuthPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (!isSupabaseConfigured) {
+      setError(SUPABASE_CONFIG_ERROR)
+      return
+    }
     setLoading(true)
     setError('')
 
@@ -59,6 +63,12 @@ export function AuthPage() {
           <h2 className="text-xl font-semibold text-cloud-800 mb-1" style={{ fontFamily: "'Quicksand', sans-serif" }}>{mode === 'login' ? '登录' : '注册'}</h2>
           <p className="text-sm text-cloud-500 mb-6">用邮箱和密码登录你的账户</p>
 
+          {!isSupabaseConfigured && (
+            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              {SUPABASE_CONFIG_ERROR}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
             <input
               type="email"
@@ -66,6 +76,7 @@ export function AuthPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               required
+              disabled={!isSupabaseConfigured}
               className="w-full px-4 py-3 rounded-xl border border-cloud-200 focus:border-sakura-400 focus:ring-2 focus:ring-sakura-200/50 outline-none transition text-cloud-800 bg-white/50"
             />
             <input
@@ -75,12 +86,13 @@ export function AuthPage() {
               placeholder="密码（至少6位）"
               required
               minLength={6}
+              disabled={!isSupabaseConfigured}
               className="w-full mt-3 px-4 py-3 rounded-xl border border-cloud-200 focus:border-sakura-400 focus:ring-2 focus:ring-sakura-200/50 outline-none transition text-cloud-800 bg-white/50"
             />
 
             <button
               type="submit"
-              disabled={loading || !email || !password}
+              disabled={loading || !email || !password || !isSupabaseConfigured}
               className="w-full mt-4 bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 disabled:bg-cloud-300 text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:shadow-sakura-200/40"
             >
               {loading ? '处理中...' : mode === 'login' ? '登录' : '注册'}
