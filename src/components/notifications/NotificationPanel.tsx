@@ -22,11 +22,9 @@ export function NotificationPanel({ onClose }: Props) {
       data-notification-panel
       className="fixed bg-white rounded-2xl shadow-xl shadow-sakura-200/30 border border-sakura-100/50 overflow-hidden z-[9999]"
       style={{
-        top: isMobile
-          ? 'calc(64px + env(safe-area-inset-top, 0))'
-          : 'calc(12px + env(safe-area-inset-top, 0))',
-        right: isMobile ? '1rem' : 'auto',
-        left: isMobile ? '1rem' : 'calc(16rem + 12px)',
+        top: 'calc(64px + env(safe-area-inset-top, 0))',
+        right: '1rem',
+        left: isMobile ? '1rem' : 'auto',
         width: isMobile ? 'auto' : '24rem',
         maxWidth: isMobile ? 'none' : '24rem',
         animation: 'slideInRight 0.2s ease-out',

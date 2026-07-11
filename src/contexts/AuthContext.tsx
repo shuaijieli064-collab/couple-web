@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null
   profile: Profile | null
   loading: boolean
+  authError: string | null
   signOut: () => Promise<void>
   refreshProfile: (userId: string) => Promise<void>
 }
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   loading: true,
+  authError: null,
   signOut: async () => {},
   refreshProfile: async () => {},
 })
@@ -26,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [authError, setAuthError] = useState<string | null>(null)
 
   async function fetchProfile(userId: string) {
     try {
@@ -45,15 +48,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfile(session.user.id)
-      } else {
+    let settled = false
+
+    const sessionTimeout = setTimeout(() => {
+      if (!settled) {
+        settled = true
+        setAuthError('连接服务器超时，请检查网络后刷新页面')
         setLoading(false)
       }
-    })
+    }, 10000)
+
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (settled) return
+        settled = true
+        clearTimeout(sessionTimeout)
+        setSession(session)
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          fetchProfile(session.user.id)
+        } else {
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        if (settled) return
+        settled = true
+        clearTimeout(sessionTimeout)
+        console.error('Failed to get session:', err)
+        setAuthError('无法连接到服务器，请检查网络')
+        setLoading(false)
+      })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
@@ -66,7 +91,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(sessionTimeout)
+      subscription.unsubscribe()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -89,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, authError, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )
