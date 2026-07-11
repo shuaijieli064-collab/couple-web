@@ -480,7 +480,9 @@ create table if not exists truth_dare_rounds (
   id uuid primary key default uuid_generate_v4(),
   type text not null check (type in ('truth', 'dare')),
   content text not null,
-  challenger uuid references profiles(id) on delete cascade not null,
+  created_by uuid references profiles(id) on delete cascade not null,
+  response text,
+  responded boolean not null default false,
   created_at timestamptz default now()
 );
 

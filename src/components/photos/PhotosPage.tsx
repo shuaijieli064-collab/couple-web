@@ -478,7 +478,9 @@ export function PhotosPage() {
 
 function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean; onClose: () => void; onUploaded: () => void; albumId?: string | null }) {
   const { user } = useAuth()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)  // 桌面端拖拽区
+  const mobileInputRef = useRef<HTMLInputElement>(null)  // 移动端相册选择
+  const cameraInputRef = useRef<HTMLInputElement>(null)  // 移动端拍照（预先存在DOM）
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState('')
@@ -487,7 +489,13 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
     if (!files || !files.length || !user) return
     setError('')
 
-    for (const file of Array.from(files)) {
+    const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'))
+    if (validFiles.length === 0) {
+      setError('请选择图片文件')
+      return
+    }
+
+    for (const file of validFiles) {
       if (file.size > MAX_FILE_SIZE) {
         setError(`文件 "${file.name}" 超过 10MB 限制`)
         return
@@ -497,19 +505,24 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
     setUploading(true)
     setProgress(0)
 
-    const total = files.length
+    const total = validFiles.length
     let successCount = 0
 
     for (let i = 0; i < total; i++) {
-      const file = files[i]
-      const ext = file.name.split('.').pop()
+      const file = validFiles[i]
+      // 从 MIME 类型获取扩展名，兼容移动端无文件名的情况
+      const ext = file.name.split('.').pop()?.toLowerCase() || file.type.split('/')[1] || 'jpg'
       const path = `${user.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`
 
       const { error: uploadError } = await supabase.storage
         .from('photos')
-        .upload(path, file)
+        .upload(path, file, {
+          cacheControl: '3600',
+          contentType: file.type || 'image/jpeg',
+        })
 
       if (uploadError) {
+        console.error('Upload error:', uploadError)
         setError(`上传失败: ${uploadError.message}`)
         continue
       }
@@ -521,10 +534,11 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
         album_id: albumId || null,
         storage_path: path,
         url: urlData.publicUrl,
-        caption: file.name.replace(/\.[^.]+$/, ''),
+        caption: file.name.replace(/\.[^.]+$/, '') || `照片_${Date.now()}`,
       })
 
       if (insertError) {
+        console.error('Insert error:', insertError)
         setError(`保存失败: ${insertError.message}`)
         continue
       }
@@ -535,6 +549,8 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
 
     setUploading(false)
     if (fileInputRef.current) fileInputRef.current.value = ''
+    if (mobileInputRef.current) mobileInputRef.current.value = ''
+    if (cameraInputRef.current) cameraInputRef.current.value = ''
     if (successCount > 0) {
       onUploaded()
       onClose()
@@ -543,13 +559,36 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="上传照片">
+      {/* 移动端：拍照 / 相册 两个按钮 */}
+      <div className="flex gap-3 mb-4">
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => cameraInputRef.current?.click()}
+          className="flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl bg-gradient-to-br from-sakura-400 to-sakura-500 text-white shadow-sm hover:shadow-md transition-all disabled:opacity-50"
+        >
+          <span className="text-2xl">📷</span>
+          <span className="text-sm font-medium">拍照</span>
+        </button>
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => mobileInputRef.current?.click()}
+          className="flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl border-2 border-cloud-200 hover:border-sakura-300 hover:bg-sakura-50/30 transition-all disabled:opacity-50"
+        >
+          <span className="text-2xl">🖼️</span>
+          <span className="text-sm font-medium text-cloud-600">从相册选择</span>
+        </button>
+      </div>
+
+      {/* 桌面端：拖拽区域 */}
       <label
-        className="block border-2 border-dashed border-cloud-200 rounded-2xl p-8 text-center hover:border-sakura-300 hover:bg-sakura-50/30 transition-all cursor-pointer relative overflow-hidden"
+        className="hidden md:block border-2 border-dashed border-cloud-200 rounded-2xl p-8 text-center hover:border-sakura-300 hover:bg-sakura-50/30 transition-all cursor-pointer relative overflow-hidden"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files) }}
       >
         <div className="text-4xl mb-3 animate-[float-gentle_2s-ease-in-out_infinite]">📤</div>
-        <p className="text-cloud-600 mb-2">{uploading ? '上传中...' : '点击选择照片'}</p>
+        <p className="text-cloud-600 mb-2">{uploading ? '上传中...' : '拖拽照片到这里，或点击选择'}</p>
         <p className="text-xs text-cloud-400">支持 JPG, PNG, WebP（单张不超过 10MB）</p>
         <input
           ref={fileInputRef}
@@ -561,6 +600,29 @@ function UploadModal({ isOpen, onClose, onUploaded, albumId }: { isOpen: boolean
           style={{ fontSize: '100px' }}
         />
       </label>
+
+      {/* 移动端隐藏的 input（供"从相册选择"按钮使用） */}
+      <input
+        ref={mobileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={(e) => handleFiles(e.target.files)}
+        className="md:hidden"
+        style={{ display: 'none' }}
+      />
+
+      {/* 移动端拍照专用 input（预先存在DOM以兼容PWA） */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={(e) => handleFiles(e.target.files)}
+        className="md:hidden"
+        style={{ display: 'none' }}
+      />
+
       {error && (
         <p className="mt-3 text-xs text-red-500 text-center bg-red-50 p-2 rounded-lg">{error}</p>
       )}

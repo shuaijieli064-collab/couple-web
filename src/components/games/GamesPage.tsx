@@ -132,7 +132,72 @@ export function GamesPage() {
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: number; x: number; y: number; emoji: string }[]>([])
   const emojiIdRef = useRef(0)
 
+  useEffect(() => {
+    if (!user) return
+    loadTapCount(user.id)
+  }, [user])
+
+  async function loadTapCount(userId: string) {
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const { data, error } = await supabase
+        .from('tap_records')
+        .select('tap_count')
+        .eq('user_id', userId)
+        .gte('created_at', `${today}T00:00:00`)
+        .lte('created_at', `${today}T23:59:59`)
+        .limit(1)
+      if (error) {
+        console.error('Failed to load tap count:', error)
+        return
+      }
+      if (data && data.length > 0) {
+        setTapCount((data[0] as { tap_count: number }).tap_count)
+      } else {
+        setTapCount(0)
+      }
+    } catch (err) {
+      console.error('Failed to load tap count:', err)
+    }
+  }
+
+  async function saveTapCount(userId: string, count: number) {
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const { data: existing, error: selectError } = await supabase
+        .from('tap_records')
+        .select('id')
+        .eq('user_id', userId)
+        .gte('created_at', `${today}T00:00:00`)
+        .lte('created_at', `${today}T23:59:59`)
+        .limit(1)
+      if (selectError) {
+        console.error('Failed to check existing tap record:', selectError)
+        return
+      }
+      let error: any
+      if (existing && existing.length > 0) {
+        const { error: updateError } = await supabase
+          .from('tap_records')
+          .update({ tap_count: count })
+          .eq('id', existing[0].id)
+        error = updateError
+      } else {
+        const { error: insertError } = await supabase
+          .from('tap_records')
+          .insert({ user_id: userId, tap_count: count })
+        error = insertError
+      }
+      if (error) {
+        console.error('Failed to save tap count:', error)
+      }
+    } catch (err) {
+      console.error('Failed to save tap count:', err)
+    }
+  }
+
   function handleTap(e: React.MouseEvent<HTMLButtonElement>) {
+    if (!user) return
     setTapCount((c) => c + 1)
     const rect = e.currentTarget.getBoundingClientRect()
     const x = e.clientX - rect.left
@@ -144,6 +209,11 @@ export function GamesPage() {
       setFloatingEmojis((prev) => prev.filter((e) => e.id !== id))
     }, 1200)
   }
+
+  useEffect(() => {
+    if (!user || tapCount < 1) return
+    saveTapCount(user.id, tapCount)
+  }, [tapCount, user])
 
   useEffect(() => {
     if (!user) return
@@ -207,7 +277,7 @@ export function GamesPage() {
         />
       )}
       {activeTab === 'draw' && <DrawGuessGame />}
-      {activeTab === 'truth' && <TruthDareGame />}
+      {activeTab === 'truth' && <TruthDareGame partner={partner} />}
       {activeTab === 'manage' && <LibraryManager />}
     </div>
   )
@@ -789,16 +859,16 @@ function TapGame({
               😊
             </div>
           )}
-          {floatingEmojis.map((em) => (
-            <span
-              key={em.id}
-              style={{ left: em.x, top: em.y, animation: 'float-up 1.2s ease-out forwards' }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 text-3xl pointer-events-none"
-            >
-              {em.emoji}
-            </span>
-          ))}
         </button>
+        {floatingEmojis.map((em) => (
+          <span
+            key={em.id}
+            style={{ left: em.x, top: em.y, animation: 'float-up 1.2s ease-out forwards' }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 text-3xl pointer-events-none z-10"
+          >
+            {em.emoji}
+          </span>
+        ))}
       </div>
 
       <div className="max-w-xs mx-auto">
@@ -844,6 +914,7 @@ function DrawGuessGame() {
   const [showCreator, setShowCreator] = useState(false)
   const [selectedRound, setSelectedRound] = useState<DrawGuessRound | null>(null)
   const [showAnswer, setShowAnswer] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   async function loadData() {
     setLoading(true)
@@ -863,6 +934,30 @@ function DrawGuessGame() {
   useEffect(() => {
     loadData()
   }, [])
+
+  async function handleDelete(roundId: string) {
+    if (!confirm('确定要删除这一轮吗？')) return
+    setDeletingId(roundId)
+    try {
+      const { error } = await supabase
+        .from('draw_guess_rounds')
+        .delete()
+        .eq('id', roundId)
+      if (error) {
+        alert(`删除失败: ${error.message}`)
+        return
+      }
+      setRounds(prev => prev.filter(r => r.id !== roundId))
+      if (selectedRound?.id === roundId) {
+        setSelectedRound(null)
+      }
+    } catch (err) {
+      console.error('Delete round error:', err)
+      alert(`删除失败: ${(err as Error).message}`)
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   if (loading) return <div className="text-center py-12 text-cloud-400">加载中...</div>
 
@@ -888,6 +983,8 @@ function DrawGuessGame() {
               round={r}
               onClick={() => { setSelectedRound(r); setShowAnswer(false) }}
               isMine={r.drawer_id === user?.id}
+              onDelete={() => handleDelete(r.id)}
+              deleting={deletingId === r.id}
             />
           ))}
         </div>
@@ -903,12 +1000,17 @@ function DrawGuessGame() {
       <Modal isOpen={!!selectedRound} onClose={() => setSelectedRound(null)}>
         {selectedRound && (
           <DrawRoundDetail
+            key={selectedRound.id + '-' + selectedRound.guessed}
             round={selectedRound}
             showAnswer={showAnswer}
             onToggleAnswer={() => setShowAnswer(!showAnswer)}
             isDrawer={selectedRound.drawer_id === user?.id}
             drawerName={selectedRound.drawer_id === user?.id ? (profile?.display_name ?? '我') : 'Ta'}
-            onGuessed={loadData}
+            onGuessed={(updated) => {
+              loadData()
+              setSelectedRound(updated)
+            }}
+            onDelete={() => handleDelete(selectedRound.id)}
           />
         )}
       </Modal>
@@ -920,11 +1022,20 @@ function DrawRoundCard({
   round,
   onClick,
   isMine,
+  onDelete,
+  deleting,
 }: {
   round: DrawGuessRound
   onClick: () => void
   isMine: boolean
+  onDelete: () => void
+  deleting: boolean
 }) {
+  function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation()
+    onDelete()
+  }
+
   return (
     <Card onClick={onClick} className="flex items-center gap-3 cursor-pointer hover:shadow-md transition-shadow">
       <div className="w-16 h-16 rounded-xl overflow-hidden bg-cloud-50 flex-shrink-0">
@@ -941,6 +1052,16 @@ function DrawRoundCard({
         </p>
         <p className="text-xs text-cloud-300 mt-1">{formatRelative(round.created_at)}</p>
       </div>
+      {isMine && (
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="text-cloud-300 hover:text-red-400 transition-colors p-2 disabled:opacity-50"
+          title="删除"
+        >
+          🗑️
+        </button>
+      )}
       <span className="text-cloud-300">›</span>
     </Card>
   )
@@ -1021,21 +1142,28 @@ function DrawRoundCreator({ onClose, onCreated }: { onClose: () => void; onCreat
     e.preventDefault()
     if (!user || !word || !canvasRef.current) return
     setSubmitting(true)
-    const dataUrl = canvasRef.current.toDataURL('image/png')
-    const { error } = await supabase.from('draw_guess_rounds').insert({
-      drawer_id: user.id,
-      word,
-      drawing_data: dataUrl,
-      guessed: false,
-      guessed_correctly: false,
-      guess: null,
-    })
-    if (error) {
-      console.error('Create round error:', error)
+    try {
+      const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.6)
+      const { error } = await supabase.from('draw_guess_rounds').insert({
+        drawer_id: user.id,
+        word,
+        drawing_data: dataUrl,
+        guessed: false,
+        guessed_correctly: false,
+        guess: null,
+      })
+      if (error) {
+        console.error('Create round error:', error)
+        alert(`提交失败: ${error.message}`)
+        return
+      }
+      onCreated()
+    } catch (err) {
+      console.error('Create round exception:', err)
+      alert(`提交失败: ${(err as Error).message}`)
+    } finally {
       setSubmitting(false)
-      return
     }
-    onCreated()
   }
 
   return (
@@ -1107,33 +1235,46 @@ function DrawRoundDetail({
   isDrawer,
   drawerName,
   onGuessed,
+  onDelete,
 }: {
   round: DrawGuessRound
   showAnswer: boolean
   onToggleAnswer: () => void
   isDrawer: boolean
   drawerName: string
-  onGuessed: () => void
+  onGuessed: (updated: DrawGuessRound) => void
+  onDelete: () => void
 }) {
   const { user } = useAuth()
   const [guess, setGuess] = useState(round.guess ?? '')
   const [submitting, setSubmitting] = useState(false)
 
   async function handleGuess() {
-    if (!user || isDrawer) return
+    if (!user || isDrawer || !guess.trim()) return
     setSubmitting(true)
-    const isCorrect = guess.trim().toLowerCase() === round.word.toLowerCase()
-    const { error } = await supabase
-      .from('draw_guess_rounds')
-      .update({ guess: guess.trim(), guessed: true, guessed_correctly: isCorrect })
-      .eq('id', round.id)
-    if (error) {
-      console.error('Guess error:', error)
+    try {
+      const isCorrect = guess.trim().toLowerCase() === round.word.toLowerCase()
+      const { error } = await supabase
+        .from('draw_guess_rounds')
+        .update({ guess: guess.trim(), guessed: true, guessed_correctly: isCorrect })
+        .eq('id', round.id)
+      if (error) {
+        console.error('Guess error:', error)
+        alert(`提交答案失败: ${error.message}`)
+        return
+      }
+      onGuessed({
+        ...round,
+        guess: guess.trim(),
+        guessed: true,
+        guessed_correctly: isCorrect,
+      })
+    } catch (err) {
+      console.error('Guess exception:', err)
+      alert(`提交答案失败: ${(err as Error).message}`)
+    } finally {
       setSubmitting(false)
-      return
     }
-    setSubmitting(false)
-    onGuessed()
   }
 
   return (
@@ -1164,9 +1305,16 @@ function DrawRoundDetail({
       ) : (
         <div className="text-center space-y-3">
           {round.guessed && (
-            <p className={`text-sm font-medium ${round.guessed_correctly ? 'text-green-500' : 'text-red-400'}`}>
-              {round.guessed_correctly ? '🎉 猜对了！' : '😅 猜错了'}
-            </p>
+            <div className={`rounded-xl py-3 px-4 ${round.guessed_correctly ? 'bg-green-50' : 'bg-red-50'}`}>
+              <p className={`text-base font-bold ${round.guessed_correctly ? 'text-green-600' : 'text-red-500'}`}>
+                {round.guessed_correctly ? '🎉 猜对了！' : '😅 猜错了'}
+              </p>
+              {round.guess && (
+                <p className="text-sm text-cloud-500 mt-1">
+                  Ta的答案：<span className="font-medium">{round.guess}</span>
+                </p>
+              )}
+            </div>
           )}
           {!showAnswer ? (
             <button onClick={onToggleAnswer} className="text-sm text-sakura-500 hover:text-sakura-600 transition-colors">
@@ -1174,10 +1322,21 @@ function DrawRoundDetail({
             </button>
           ) : (
             <div className="bg-sakura-50 rounded-xl py-3 px-4">
-              <p className="text-xs text-cloud-400">答案</p>
+              <p className="text-xs text-cloud-400">正确答案</p>
               <p className="text-lg font-bold text-sakura-600" style={{ fontFamily: "'Quicksand', sans-serif" }}>{round.word}</p>
             </div>
           )}
+        </div>
+      )}
+
+      {isDrawer && (
+        <div className="pt-2 border-t border-cloud-100">
+          <button
+            onClick={onDelete}
+            className="w-full py-2 text-sm text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+          >
+            🗑️ 删除这一轮
+          </button>
         </div>
       )}
     </div>
@@ -1185,12 +1344,15 @@ function DrawRoundDetail({
 }
 
 // ==================== 真心话大冒险 ====================
-function TruthDareGame() {
+function TruthDareGame({ partner }: { partner: Profile | null }) {
   const { user } = useAuth()
   const [rounds, setRounds] = useState<TruthDareRound[]>([])
   const [loading, setLoading] = useState(true)
   const [showChooser, setShowChooser] = useState(false)
   const [currentCard, setCurrentCard] = useState<{ type: 'truth' | 'dare'; content: string } | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [selectedRound, setSelectedRound] = useState<TruthDareRound | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   async function loadData() {
     setLoading(true)
@@ -1218,19 +1380,60 @@ function TruthDareGame() {
   }
 
   async function confirmDone(type: 'truth' | 'dare', content: string) {
-    if (!user || !currentCard) return
-    const { error } = await supabase.from('truth_dare_rounds').insert({
-      type,
-      content,
-      challenger: user.id,
-    })
-    if (error) {
-      console.error('Create truth dare error:', error)
+    if (!user || !currentCard || submitting) return
+    if (!partner) {
+      alert('未找到对方，无法创建真心话大冒险')
       return
     }
-    setCurrentCard(null)
-    setShowChooser(false)
-    loadData()
+    setSubmitting(true)
+    try {
+      const { error } = await supabase.from('truth_dare_rounds').insert({
+        type,
+        content,
+        created_by: user.id,
+        challenger: user.id,
+        target_user: partner.id,
+        response: null,
+        responded: false,
+      })
+      if (error) {
+        console.error('Create truth dare error:', error)
+        alert(`提交失败: ${error.message}`)
+        return
+      }
+      setCurrentCard(null)
+      setShowChooser(false)
+      loadData()
+    } catch (err) {
+      console.error('Create truth dare exception:', err)
+      alert(`提交失败: ${(err as Error).message}`)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleDelete(roundId: string) {
+    if (!confirm('确定要删除这条记录吗？')) return
+    setDeletingId(roundId)
+    try {
+      const { error } = await supabase
+        .from('truth_dare_rounds')
+        .delete()
+        .eq('id', roundId)
+      if (error) {
+        alert(`删除失败: ${error.message}`)
+        return
+      }
+      setRounds(prev => prev.filter(r => r.id !== roundId))
+      if (selectedRound?.id === roundId) {
+        setSelectedRound(null)
+      }
+    } catch (err) {
+      console.error('Delete truth dare error:', err)
+      alert(`删除失败: ${(err as Error).message}`)
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   if (loading) return <div className="text-center py-12 text-cloud-400">加载中...</div>
@@ -1252,11 +1455,22 @@ function TruthDareGame() {
           <h3 className="text-sm font-semibold text-cloud-600 mb-2">最近记录</h3>
           <div className="space-y-2">
             {rounds.slice(0, 10).map((r) => (
-              <Card key={r.id} className="flex items-center gap-3">
+              <Card
+                key={r.id}
+                onClick={() => setSelectedRound(r)}
+                className="flex items-center gap-3 cursor-pointer hover:shadow-md transition-shadow"
+              >
                 <span className="text-2xl">{r.type === 'truth' ? '🤫' : '🎯'}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-cloud-400 mb-0.5">{r.type === 'truth' ? '真心话' : '大冒险'}</p>
-                  <p className="text-sm text-cloud-700">{r.content}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-cloud-400">{r.type === 'truth' ? '真心话' : '大冒险'}</p>
+                    {r.responded ? (
+                      <span className="text-xs text-green-500">✅ 已回答</span>
+                    ) : (
+                      <span className="text-xs text-cloud-300">⏳ 等待回答</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-cloud-700 line-clamp-2">{r.content}</p>
                 </div>
                 <span className="text-xs text-cloud-300 shrink-0">{formatRelative(r.created_at)}</span>
               </Card>
@@ -1300,20 +1514,134 @@ function TruthDareGame() {
             <div className="flex gap-2">
               <button
                 onClick={() => setCurrentCard(null)}
-                className="flex-1 py-2 text-sm text-cloud-500 bg-cloud-50 hover:bg-cloud-100 rounded-xl transition-colors"
+                disabled={submitting}
+                className="flex-1 py-2 text-sm text-cloud-500 bg-cloud-50 hover:bg-cloud-100 disabled:opacity-50 rounded-xl transition-colors"
               >
                 再抽一张
               </button>
               <button
                 onClick={() => confirmDone(currentCard.type, currentCard.content)}
-                className="flex-1 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 rounded-xl transition-all shadow-sm"
+                disabled={submitting}
+                className="flex-1 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 disabled:opacity-50 rounded-xl transition-all shadow-sm"
               >
-                完成 ✅
+                {submitting ? '提交中...' : '完成 ✅'}
               </button>
             </div>
           </div>
         )}
       </Modal>
+
+      <Modal isOpen={!!selectedRound} onClose={() => setSelectedRound(null)} title="真心话大冒险详情">
+        {selectedRound && (
+          <TruthDareDetail
+            key={selectedRound.id + '-' + selectedRound.responded}
+            round={selectedRound}
+            isChallenger={selectedRound.created_by === user?.id}
+            onResponded={() => { loadData(); setSelectedRound(null) }}
+            onDelete={() => handleDelete(selectedRound.id)}
+            deleting={deletingId === selectedRound.id}
+          />
+        )}
+      </Modal>
+    </div>
+  )
+}
+
+function TruthDareDetail({
+  round,
+  isChallenger,
+  onResponded,
+  onDelete,
+  deleting,
+}: {
+  round: TruthDareRound
+  isChallenger: boolean
+  onResponded: () => void
+  onDelete: () => void
+  deleting: boolean
+}) {
+  const { user } = useAuth()
+  const [response, setResponse] = useState(round.response ?? '')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleRespond() {
+    if (!user || isChallenger || !response.trim()) return
+    setSubmitting(true)
+    try {
+      const { error } = await supabase
+        .from('truth_dare_rounds')
+        .update({ response: response.trim(), responded: true })
+        .eq('id', round.id)
+      if (error) {
+        console.error('Respond error:', error)
+        alert(`回答失败: ${error.message}`)
+        return
+      }
+      onResponded()
+    } catch (err) {
+      console.error('Respond exception:', err)
+      alert(`回答失败: ${(err as Error).message}`)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div
+        className={`p-6 rounded-2xl text-center ${round.type === 'truth' ? 'bg-gradient-to-br from-sakura-100 to-sakura-200' : 'bg-gradient-to-br from-peach-100 to-peach-200'}`}
+      >
+        <div className="text-4xl mb-3">{round.type === 'truth' ? '🤫' : '🎯'}</div>
+        <p className="text-xs text-cloud-500 mb-2">
+          {round.type === 'truth' ? '真心话' : '大冒险'} · {isChallenger ? '我出的' : 'Ta出的'}
+        </p>
+        <p className="text-lg font-bold text-cloud-800" style={{ fontFamily: "'Quicksand', sans-serif" }}>
+          {round.content}
+        </p>
+      </div>
+
+      {!isChallenger && !round.responded ? (
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-cloud-700">
+            {round.type === 'truth' ? '说说你的真心话' : '说说你完成了什么'}
+          </label>
+          <textarea
+            value={response}
+            onChange={(e) => setResponse(e.target.value)}
+            placeholder={round.type === 'truth' ? '如实回答吧~' : '描述一下你的大冒险过程~'}
+            rows={3}
+            className="w-full px-4 py-2 rounded-xl border border-cloud-200 focus:border-sakura-400 focus:ring-2 focus:ring-sakura-200/50 outline-none resize-none"
+          />
+          <button
+            onClick={handleRespond}
+            disabled={submitting || !response.trim()}
+            className="w-full py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 disabled:bg-cloud-300 rounded-xl transition-all shadow-sm"
+          >
+            {submitting ? '提交中...' : '提交回答'}
+          </button>
+        </div>
+      ) : round.responded ? (
+        <div className="bg-green-50 rounded-xl py-3 px-4">
+          <p className="text-xs text-cloud-400 mb-1">回答</p>
+          <p className="text-sm text-cloud-800">{round.response}</p>
+        </div>
+      ) : (
+        <div className="text-center text-sm text-cloud-400 py-2">
+          ⏳ 等待对方回答...
+        </div>
+      )}
+
+      {isChallenger && (
+        <div className="pt-2 border-t border-cloud-100">
+          <button
+            onClick={onDelete}
+            disabled={deleting}
+            className="w-full py-2 text-sm text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+          >
+            {deleting ? '删除中...' : '🗑️ 删除这条记录'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

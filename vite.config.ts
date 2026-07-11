@@ -17,8 +17,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       devOptions: {
-        enabled: true,
-        type: 'module',
+        enabled: false,
       },
       includeAssets: [
         'favicon.svg',
@@ -116,7 +115,7 @@ export default defineConfig({
             urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'supabase-images-v3',
+              cacheName: 'supabase-images-v4',
               expiration: {
                 maxEntries: 200,
                 maxAgeSeconds: 60 * 60 * 24 * 60,
@@ -130,7 +129,7 @@ export default defineConfig({
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-api-v3',
+              cacheName: 'supabase-api-v4',
               networkTimeoutSeconds: 10,
               expiration: {
                 maxEntries: 100,

@@ -30,6 +30,22 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // 一次性清除旧 Service Worker 缓存（用 localStorage 标记只执行一次）
+      if ('serviceWorker' in navigator && !localStorage.getItem('sw_cleaned_v4')) {
+        localStorage.setItem('sw_cleaned_v4', '1');
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (var registration of registrations) {
+            registration.unregister();
+          }
+        });
+        caches.keys().then(function(names) {
+          for (var name of names) {
+            caches.delete(name);
+          }
+        });
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

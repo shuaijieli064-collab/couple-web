@@ -160,6 +160,14 @@ export interface LoveLetter {
   created_at: string
 }
 
+/** 戳戳游戏记录 */
+export interface TapRecord {
+  id: string
+  user_id: string
+  tap_count: number
+  created_at: string
+}
+
 /** 你画我猜 */
 export interface DrawGuessRound {
   id: string
@@ -177,7 +185,9 @@ export interface TruthDareRound {
   id: string
   type: string
   content: string
-  challenger: string
+  created_by: string
+  response: string | null
+  responded: boolean
   created_at: string
 }
 

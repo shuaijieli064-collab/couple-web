@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from 'react'
+import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { Card } from '../common/Card'
@@ -198,6 +198,17 @@ export function DiaryPage() {
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedEntry.content}</ReactMarkdown>
                 </div>
 
+                {/* 照片附件展示 */}
+                {selectedEntry.photo_attachments && selectedEntry.photo_attachments.length > 0 && (
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    {selectedEntry.photo_attachments.map((url, idx) => (
+                      <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="block rounded-xl overflow-hidden aspect-square">
+                        <img src={url} alt={`照片${idx + 1}`} className="w-full h-full object-cover hover:opacity-80 transition-opacity" loading="lazy" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+
                 <CommentsSection diaryId={selectedEntry.id} />
 
                 <div className="mt-6 pt-4 border-t border-cloud-100 flex justify-end">
@@ -334,19 +345,61 @@ function DiaryEditor({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [mood, setMood] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [photos, setPhotos] = useState<string[]>([])
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const mobileInputRef = useRef<HTMLInputElement>(null)
+
+  async function uploadDiaryPhoto(file: File | undefined) {
+    if (!file || !user) return
+    if (!file.type.startsWith('image/')) {
+      alert('请选择图片文件')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('图片大小不能超过 10MB')
+      return
+    }
+    setUploadingPhoto(true)
+    const ext = file.name.split('.').pop()?.toLowerCase() || file.type.split('/')[1] || 'jpg'
+    const path = `${user.id}/diary/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`
+    const { error: uploadError } = await supabase.storage.from('photos').upload(path, file, {
+      cacheControl: '3600',
+      contentType: file.type || 'image/jpeg',
+    })
+    if (uploadError) {
+      alert(`上传失败: ${uploadError.message}`)
+      setUploadingPhoto(false)
+      return
+    }
+    const { data: urlData } = supabase.storage.from('photos').getPublicUrl(path)
+    setPhotos(prev => [...prev, urlData.publicUrl])
+    setUploadingPhoto(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (mobileInputRef.current) mobileInputRef.current.value = ''
+  }
+
+  function removePhoto(idx: number) {
+    setPhotos(prev => prev.filter((_, i) => i !== idx))
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!user || !title || !content) return
     setSubmitting(true)
-    await supabase.from('diary_entries').insert({
+    const { error } = await supabase.from('diary_entries').insert({
       user_id: user.id,
       title,
       content,
       date,
       mood,
+      photo_attachments: photos.length > 0 ? photos : null,
     })
     setSubmitting(false)
+    if (error) {
+      alert(`保存失败: ${error.message}`)
+      return
+    }
     onSaved()
   }
 
@@ -398,6 +451,77 @@ function DiaryEditor({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
           className="w-full px-4 py-2 rounded-xl border border-cloud-200 focus:border-sakura-400 focus:ring-2 focus:ring-sakura-200/50 outline-none resize-none font-mono text-sm"
         />
       </div>
+      {/* 照片附件 */}
+      <div>
+        <label className="block text-sm font-medium text-cloud-700 mb-2">照片附件</label>
+        {photos.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {photos.map((url, idx) => (
+              <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden group">
+                <img src={url} alt={`附件${idx + 1}`} className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(idx)}
+                  className="absolute top-1 right-1 w-5 h-5 bg-black/50 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-500 transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* 移动端：拍照 / 相册 */}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={uploadingPhoto}
+            onClick={() => {
+              const input = document.createElement('input')
+              input.type = 'file'
+              input.accept = 'image/*'
+              input.capture = 'environment'
+              input.onchange = (e) => uploadDiaryPhoto((e.target as HTMLInputElement).files?.[0])
+              input.click()
+            }}
+            className="flex-1 py-2 text-sm rounded-xl bg-gradient-to-r from-sakura-400 to-sakura-500 text-white shadow-sm disabled:opacity-50"
+          >
+            {uploadingPhoto ? '上传中...' : '📷 拍照'}
+          </button>
+          <button
+            type="button"
+            disabled={uploadingPhoto}
+            onClick={() => mobileInputRef.current?.click()}
+            className="flex-1 py-2 text-sm rounded-xl border-2 border-cloud-200 text-cloud-600 hover:border-sakura-300 transition-colors disabled:opacity-50"
+          >
+            🖼️ 相册
+          </button>
+        </div>
+        {/* 桌面端：拖拽 / 点击 */}
+        <label
+          className="hidden md:flex mt-2 border-2 border-dashed border-cloud-200 rounded-xl p-4 text-center hover:border-sakura-300 hover:bg-sakura-50/30 transition-all cursor-pointer items-center justify-center gap-2"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => { e.preventDefault(); uploadDiaryPhoto(e.dataTransfer.files[0]) }}
+        >
+          <span className="text-cloud-400 text-sm">{uploadingPhoto ? '上传中...' : '📎 点击或拖拽添加照片'}</span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => uploadDiaryPhoto(e.target.files?.[0])}
+          />
+        </label>
+        {/* 移动端隐藏 input */}
+        <input
+          ref={mobileInputRef}
+          type="file"
+          accept="image/*"
+          className="md:hidden"
+          style={{ display: 'none' }}
+          onChange={(e) => uploadDiaryPhoto(e.target.files?.[0])}
+        />
+      </div>
+
       <div className="flex gap-2 justify-end">
         <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-cloud-500 hover:bg-cloud-100 rounded-xl transition-colors">取消</button>
         <button type="submit" disabled={submitting || !title || !content} className="px-4 py-2 text-sm text-white bg-gradient-to-r from-sakura-400 to-sakura-500 hover:from-sakura-500 hover:to-sakura-600 disabled:bg-cloud-300 rounded-xl transition-all shadow-sm">
