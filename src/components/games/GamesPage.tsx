@@ -1071,6 +1071,7 @@ function DrawRoundCreator({ onClose, onCreated }: { onClose: () => void; onCreat
   const { user } = useAuth()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
+  const activePointerIdRef = useRef<number | null>(null)
   const [color, setColor] = useState('#ec4899')
   const [brushSize, setBrushSize] = useState(4)
   const [word, setWord] = useState('')
@@ -1086,25 +1087,21 @@ function DrawRoundCreator({ onClose, onCreated }: { onClose: () => void; onCreat
     ctx.fillRect(0, 0, canvas.width, canvas.height)
   }, [])
 
-  function getPos(e: React.MouseEvent | React.TouchEvent) {
+  function getPos(e: React.PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current
     if (!canvas) return { x: 0, y: 0 }
     const rect = canvas.getBoundingClientRect()
     const scaleX = canvas.width / rect.width
     const scaleY = canvas.height / rect.height
-    let clientX: number, clientY: number
-    if ('touches' in e) {
-      clientX = e.touches[0].clientX
-      clientY = e.touches[0].clientY
-    } else {
-      clientX = e.clientX
-      clientY = e.clientY
-    }
-    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY }
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY }
   }
 
-  function startDraw(e: React.MouseEvent | React.TouchEvent) {
+  function startDraw(e: React.PointerEvent<HTMLCanvasElement>) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    e.preventDefault()
     setIsDrawing(true)
+    activePointerIdRef.current = e.pointerId
+    e.currentTarget.setPointerCapture(e.pointerId)
     const ctx = canvasRef.current?.getContext('2d')
     if (!ctx) return
     const { x, y } = getPos(e)
@@ -1112,8 +1109,8 @@ function DrawRoundCreator({ onClose, onCreated }: { onClose: () => void; onCreat
     ctx.moveTo(x, y)
   }
 
-  function draw(e: React.MouseEvent | React.TouchEvent) {
-    if (!isDrawing) return
+  function draw(e: React.PointerEvent<HTMLCanvasElement>) {
+    if (!isDrawing || activePointerIdRef.current !== e.pointerId) return
     e.preventDefault()
     const ctx = canvasRef.current?.getContext('2d')
     if (!ctx) return
@@ -1126,8 +1123,13 @@ function DrawRoundCreator({ onClose, onCreated }: { onClose: () => void; onCreat
     ctx.stroke()
   }
 
-  function endDraw() {
+  function endDraw(e: React.PointerEvent<HTMLCanvasElement>) {
+    if (activePointerIdRef.current !== e.pointerId) return
     setIsDrawing(false)
+    activePointerIdRef.current = null
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    }
   }
 
   function clearCanvas() {
@@ -1175,14 +1177,13 @@ function DrawRoundCreator({ onClose, onCreated }: { onClose: () => void; onCreat
             ref={canvasRef}
             width={400}
             height={300}
-            onMouseDown={startDraw}
-            onMouseMove={draw}
-            onMouseUp={endDraw}
-            onMouseLeave={endDraw}
-            onTouchStart={startDraw}
-            onTouchMove={draw}
-            onTouchEnd={endDraw}
+            onPointerDown={startDraw}
+            onPointerMove={draw}
+            onPointerUp={endDraw}
+            onPointerCancel={endDraw}
+            onPointerLeave={endDraw}
             className="w-full touch-none"
+            style={{ touchAction: 'none' }}
           />
         </div>
       </div>
