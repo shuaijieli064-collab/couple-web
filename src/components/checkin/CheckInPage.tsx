@@ -20,19 +20,25 @@ export function CheckInPage() {
     if (!user) return
     setLoading(true)
     try {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('*')
-        .neq('id', user.id)
-        .limit(1)
-      if (profiles && profiles.length > 0) setPartner(profiles[0] as Profile)
-
       const sevenDaysAgo = new Date(today.getTime() - 6 * 86400000).toISOString().split('T')[0]
-      const { data: checkinData } = await supabase
-        .from('checkins')
-        .select('*')
-        .gte('checkin_date', sevenDaysAgo)
-        .order('checkin_date', { ascending: false })
+
+      const [
+        { data: profiles },
+        { data: checkinData },
+      ] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .neq('id', user.id)
+          .limit(1),
+        supabase
+          .from('checkins')
+          .select('*')
+          .gte('checkin_date', sevenDaysAgo)
+          .order('checkin_date', { ascending: false }),
+      ])
+
+      if (profiles && profiles.length > 0) setPartner(profiles[0] as Profile)
       if (checkinData) setCheckins(checkinData as CheckIn[])
     } catch (err) {
       console.error('Failed to load checkins:', err)

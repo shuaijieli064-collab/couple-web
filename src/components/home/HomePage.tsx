@@ -23,42 +23,46 @@ export function HomePage() {
     if (!user) return
 
     try {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('*')
-        .neq('id', user.id)
-        .limit(1)
+      const [
+        { data: profiles },
+        { data: anniversariesData },
+        { data: photosData },
+        { data: diaryData },
+      ] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .neq('id', user.id)
+          .limit(1),
+        supabase
+          .from('anniversaries')
+          .select('*')
+          .order('date', { ascending: true })
+          .limit(5),
+        supabase
+          .from('photos')
+          .select('id, url, caption')
+          .order('created_at', { ascending: false })
+          .limit(4),
+        supabase
+          .from('diary_entries')
+          .select('id, title, content, date, user_id')
+          .order('date', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ])
 
       if (profiles && profiles.length > 0) {
         setPartner(profiles[0] as Profile)
       }
 
-      const { data: anniversariesData } = await supabase
-        .from('anniversaries')
-        .select('*')
-        .order('date', { ascending: true })
-        .limit(5)
-
       if (anniversariesData) {
         setAnniversaries(anniversariesData as Anniversary[])
       }
 
-      const { data: photosData } = await supabase
-        .from('photos')
-        .select('id, url, caption')
-        .order('created_at', { ascending: false })
-        .limit(4)
-
       if (photosData) {
         setRecentPhotos(photosData)
       }
-
-      const { data: diaryData } = await supabase
-        .from('diary_entries')
-        .select('id, title, content, date, user_id')
-        .order('date', { ascending: false })
-        .limit(1)
-        .maybeSingle()
 
       if (diaryData) {
         const entry = diaryData as { id: string; title: string; content: string; date: string; user_id: string }

@@ -30,18 +30,23 @@ export function MoodPage() {
     if (!user) return
     setLoading(true)
     try {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('*')
-        .neq('id', user.id)
-        .limit(1)
-      if (profiles && profiles.length > 0) setPartner(profiles[0] as Profile)
+      const [
+        { data: profiles },
+        { data: moodData },
+      ] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .neq('id', user.id)
+          .limit(1),
+        supabase
+          .from('mood_bubbles')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(20),
+      ])
 
-      const { data: moodData } = await supabase
-        .from('mood_bubbles')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20)
+      if (profiles && profiles.length > 0) setPartner(profiles[0] as Profile)
       if (moodData) setMoods(moodData as MoodBubble[])
     } catch (err) {
       console.error('Failed to load moods:', err)
